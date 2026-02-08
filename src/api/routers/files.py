@@ -1,12 +1,6 @@
 """
-API Router per Upload de Fitxers
-
-Endpoints:
-- POST /files/upload - Pujar un fitxer
-- POST /files/upload-multiple - Pujar múltiples fitxers
-- GET /files/list - Llistar fitxers
-- GET /files/download - Descarregar fitxer
-- DELETE /files/delete - Eliminar fitxer
+File Upload API - Working Implementation
+Actually saves files to disk and associates with projects
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
@@ -14,172 +8,162 @@ from pydantic import BaseModel
 from typing import Optional, List
 import json
 from pathlib import Path
-from src.data.loaders import FileUploader
+from src.core.project_manager import ProjectManager
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
-# Instància global
-file_uploader = FileUploader()
+# Global project manager
+project_manager = ProjectManager()
 
 
 class UploadResponse(BaseModel):
-    """Response d'upload"""
+    """Upload response"""
     success: bool
     filename: str
-    format: str
-    metadata: dict = None
+    type: str
+    project: str
+    path: str = None
     error: str = None
 
 
-class FileInfo(BaseModel):
-    """Informació d'un fitxer"""
-    name: str
-    format: str
-    size: int
-    path: str
-    metadata: dict = None
+class FileListItem(BaseModel):
+    """File info"""
+    filename: str
+    type: str
+    uploaded_at: str = None
 
 
 class FileListResponse(BaseModel):
-    """Response de llistat"""
-    files: List[FileInfo]
+    """List files response"""
+    project: str
+    files: List[FileListItem]
 
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
-    project: str = Form(...)
+    project: str = Form(...),
+    file_type: str = Form("met")
 ):
     """
-    Puja un fitxer
-    
-    Parameters:
-    - file: El fitxer a pujar
-    - project: Nom del projecte
-    
-    Formats suportats:
-    - .nc (NetCDF)
-    - .tiff/.tif (GeoTIFF)
-    - .csv (dades tabulares)
-    - .txt (text)
-    - .shp (ShapeFiles)
+    Upload a file to a project
+    - file: The file to upload
+    - project: Project name
+    - file_type: met, turbines, topography, landcover
     """
     try:
-        # Llegir contingut
+        # Read file content
         content = await file.read()
         
-        # Pujar
-        result = file_uploader.upload_file(content, file.filename)
-        
-        # Moure al directori del projecte
-        project_dir = Path("projects") / project / "data"
-        if project_dir.exists():
-            dest = project_dir / file.filename
-            with open(dest, 'wb') as f:
-                f.write(content)
+        # Save file
+        result = project_manager.save_file(
+            project_name=project,
+            file_content=content,
+            filename=file.filename,
+            file_type=file_type
+        )
         
         return UploadResponse(
             success=True,
             filename=file.filename,
-            format=result.format,
-            metadata=result.metadata
+            type=file_type,
+            project=project,
+            path=result.get("path")
         )
     
     except Exception as e:
-        return UploadResponse(success=False, filename=file.filename, error=str(e))
+        return UploadResponse(
+            success=False,
+            filename=file.filename,
+            type=file_type,
+            project=project,
+            error=str(e)
+        )
 
 
 @router.post("/upload-multiple")
 async def upload_multiple_files(
     files: List[UploadFile] = File(...),
-    project: str = Form(...)
+    project: str = Form(...),
+    file_type: str = Form("met")
 ):
     """
-    Puja múltiples fitxers simultàniament
+    Upload multiple files to a project
     """
     results = []
     
     for file in files:
         try:
             content = await file.read()
-            result = file_uploader.upload_file(content, file.filename)
-            
+            result = project_manager.save_file(
+                project_name=project,
+                file_content=content,
+                filename=file.filename,
+                file_type=file_type
+            )
             results.append({
-                'filename': file.filename,
-                'success': True,
-                'format': result.format,
-                'metadata': result.metadata
+                "filename": file.filename,
+                "success": True,
+                "type": file_type
             })
         except Exception as e:
             results.append({
-                'filename': file.filename,
-                'success': False,
-                'error': str(e)
+                "filename": file.filename,
+                "success": False,
+                "error": str(e)
             })
     
-    return {'files': results}
+    return {"results": results}
 
 
 @router.get("/list", response_model=FileListResponse)
-async def list_files(project: str, filetype: str = None):
+async def list_files(project: str, file_type: str = None):
     """
-    Llista els fitxers d'un projecte
-    
-    Query params:
-    - project: Nom del projecte
-    - filetype: Filtre per tipus (netcdf, geotiff, csv, etc.)
+    List files in a project
     """
-    project_dir = Path("projects") / project / "data"
+    files = project_manager.get_files(project, file_type)
     
-    if not project_dir.exists():
-        return FileListResponse(files=[])
-    
-    files = []
-    
-    for filepath in project_dir.rglob("*"):
-        if filepath.is_file():
-            # Filtrar per tipus si cal
-            if filetype:
-                if filepath.suffix.lower() != f".{filetype}":
-                    continue
-            
-            files.append(FileInfo(
-                name=filepath.name,
-                format=filepath.suffix.lower().replace('.', ''),
-                size=filepath.stat().st_size,
-                path=str(filepath.relative_to(project_dir.parent)),
-                metadata=None
-            ))
-    
-    return FileListResponse(files=files)
+    return FileListResponse(
+        project=project,
+        files=[
+            FileListItem(
+                filename=f.get("filename", ""),
+                type=f.get("type", ""),
+                uploaded_at=f.get("uploaded_at", "")
+            )
+            for f in files
+        ]
+    )
 
 
 @router.delete("/delete")
-async def delete_file(project: str, filename: str):
+async def delete_file(project: str, filename: str, file_type: str = Form(...)):
     """
-    Elimina un fitxer
+    Delete a file from a project
     """
-    filepath = Path("projects") / project / "data" / filename
+    # Get project config
+    project_data = project_manager.get_project(project)
+    if not project_data:
+        raise HTTPException(status_code=404, detail="Project not found")
     
-    if filepath.exists():
-        filepath.unlink()
-        return {'success': True, 'filename': filename}
-    else:
-        return {'success': False, 'error': 'File not found'}
-
-
-@router.get("/download/{project}/{filename}")
-async def download_file(project: str, filename: str):
-    """
-    Descarrega un fitxer
-    """
-    filepath = Path("projects") / project / "data" / filename
+    # Find and delete file
+    files = project_data.get("files", {}).get(file_type, [])
+    for f in files:
+        if f.get("filename") == filename:
+            file_path = Path(f.get("path", ""))
+            if file_path.exists():
+                file_path.unlink()
+            
+            # Update project.json
+            project_data["files"][file_type].remove(f)
+            config_path = Path(projects_base) / project / "project.json"
+            with open(config_path, 'w') as f:
+                json.dump(project_data, f)
+            
+            return {"success": True, "filename": filename}
     
-    if filepath.exists():
-        return FileResponse(str(filepath))
-    else:
-        raise HTTPException(status_code=404, detail="File not found")
+    raise HTTPException(status_code=404, detail="File not found")
 
 
-# Import necessari
-from fastapi.responses import FileResponse
+# Global for delete endpoint
+from src.core.project_manager import projects_base

@@ -1,73 +1,52 @@
 """
-API Router per Projectes i Fitxers
-
-Endpoints:
-- POST /projects/create - Crear nou projecte
-- POST /projects/save - Guardar projecte
-- GET /projects/list - Llistar projectes
-- POST /files/upload - Pujar fitxers
-- GET /files/list - Llistar fitxers d'un projecte
+Projects API - Working Implementation
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
-import json
-from pathlib import Path
 from src.core.project_manager import ProjectManager
-from src.data.loaders import FileUploader
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
-# Instàncies globals
+# Global project manager
 project_manager = ProjectManager()
-file_uploader = FileUploader()
 
 
 class CreateProjectRequest(BaseModel):
-    """Request per crear projecte"""
+    """Create project request"""
     name: str
     description: str = ""
     author: str = ""
 
 
+class ProjectInfo(BaseModel):
+    """Project info response"""
+    name: str
+    description: str = ""
+    author: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+    status: str = "active"
+    path: str = ""
+    files_count: int = 0
+
+
 class ProjectResponse(BaseModel):
-    """Response de projecte"""
+    """General response"""
     success: bool
-    project: dict = None
-    error: str = None
-
-
-class UploadResponse(BaseModel):
-    """Response d'upload"""
-    success: bool
-    filename: str
-    format: str
-    metadata: dict = None
-    error: str = None
-
-
-class FileListResponse(BaseModel):
-    """Response de llistat de fitxers"""
-    files: List[dict]
+    message: str = ""
+    project: ProjectInfo = None
 
 
 @router.post("/create", response_model=ProjectResponse)
 async def create_project(request: CreateProjectRequest):
     """
-    Crea un nou projecte
-    
-    Exemple:
-    ```json
-    {
-        "name": "Meu Parc Eòlic",
-        "description": "Anàlisi de viabilitat",
-        "author": "Oriol"
-    }
-    ```
+    Create a new project
     """
     try:
-        project = project_manager.create_project(
+        # Create project
+        project_data = project_manager.create_project(
             name=request.name,
             description=request.description,
             author=request.author
@@ -75,75 +54,83 @@ async def create_project(request: CreateProjectRequest):
         
         return ProjectResponse(
             success=True,
-            project={
-                'name': project.config.name,
-                'description': project.config.description,
-                'created_at': project.config.created_at
-            }
+            message=f"Project '{request.name}' created successfully",
+            project=ProjectInfo(
+                name=project_data["name"],
+                description=project_data.get("description", ""),
+                author=project_data.get("author", ""),
+                created_at=project_data["created_at"],
+                updated_at=project_data["updated_at"],
+                status=project_data["status"],
+                path=str(project_manager.projects_base / request.name.replace(" ", "_"))
+            )
         )
     
-    except Exception as e:
-        return ProjectResponse(success=False, error=str(e))
-
-
-@router.get("/list")
-async def list_projects():
-    """
-    Llista tots els projectes
-    """
-    projects = project_manager.list_projects()
-    return {"projects": projects}
-
-
-@router.post("/save", response_model=ProjectResponse)
-async def save_project():
-    """
-    Guarda el projecte actual
-    """
-    try:
-        path = project_manager.save_project()
+    except ValueError as e:
         return ProjectResponse(
-            success=True,
-            project={'path': path}
+            success=False,
+            message=str(e)
         )
     except Exception as e:
-        return ProjectResponse(success=False, error=str(e))
+        return ProjectResponse(
+            success=False,
+            message=f"Error creating project: {str(e)}"
+        )
+
+
+@router.get("/list", response_model=List[ProjectInfo])
+async def list_projects():
+    """
+    List all projects
+    """
+    return project_manager.list_projects()
 
 
 @router.get("/{project_name}", response_model=ProjectResponse)
 async def get_project(project_name: str):
     """
-    Carrega un projecte existent
+    Get project details
     """
-    try:
-        project = project_manager.load_project(project_name)
-        
+    project_data = project_manager.get_project(project_name)
+    
+    if not project_data:
         return ProjectResponse(
-            success=True,
-            project={
-                'name': project.config.name,
-                'description': project.config.description,
-                'created_at': project.config.created_at,
-                'updated_at': project.config.updated_at,
-                'met_sites_count': len(project.met_sites) if project.met_sites else 0,
-                'turbines_count': len(project.turbines) if project.turbines else 0,
-                'has_topography': project.topography is not None,
-                'has_land_cover': project.land_cover is not None
-            }
+            success=False,
+            message=f"Project '{project_name}' not found"
         )
     
-    except Exception as e:
-        return ProjectResponse(success=False, error=str(e))
+    # Count files
+    files_count = sum(len(files) for files in project_data.get("files", {}).values())
+    
+    return ProjectResponse(
+        success=True,
+        project=ProjectInfo(
+            name=project_data["name"],
+            description=project_data.get("description", ""),
+            author=project_data.get("author", ""),
+            created_at=project_data["created_at"],
+            updated_at=project_data["updated_at"],
+            status=project_data.get("status", "active"),
+            path=str(project_manager.projects_base / project_name.replace(" ", "_")),
+            files_count=files_count
+        )
+    )
 
 
 @router.delete("/{project_name}", response_model=ProjectResponse)
 async def delete_project(project_name: str):
     """
-    Elimina un projecte
+    Delete a project
     """
     success = project_manager.delete_project(project_name)
     
     if success:
-        return ProjectResponse(success=True)
+        return ProjectResponse(
+            success=True,
+            message=f"Project '{project_name}' deleted"
+        )
     else:
-        return ProjectResponse(success=False, error="Project not found")
+        return ProjectResponse(
+            success=False,
+            message=f"Project '{project_name}' not found"
+        )

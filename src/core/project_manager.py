@@ -1,361 +1,218 @@
 """
-Project Manager - Gestió de projectes Continuum
-
-Funcionalitats:
-- Crear nous projectes
-- Guardar/carregar projectes
-- Exportar resultats
+Project Manager - Full Implementation
+Handles project creation, file storage, data association
 """
 
+import os
 import json
-import zipfile
 import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any
-from dataclasses import dataclass, asdict
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
-@dataclass
-class ProjectConfig:
-    """Configuració del projecte"""
-    name: str
-    description: str = ""
-    created_at: str = ""
-    updated_at: str = ""
-    version: str = "2.0.0"
-    author: str = ""
-    crs: str = "EPSG:4326"  # WGS84 per defecte
-
-
-@dataclass
-class ProjectData:
-    """Dades del projecte"""
-    config: ProjectConfig
-    met_sites: list = None
-    turbines: list = None
-    topography: Dict = None
-    land_cover: Dict = None
-    wind_rose: Dict = None
-    results: Dict = None
-    
-    def to_dict(self) -> Dict:
-        return {
-            'config': asdict(self.config),
-            'met_sites': self.met_sites,
-            'turbines': self.turbines,
-            'topography': self.topography,
-            'land_cover': self.land_cover,
-            'wind_rose': self.wind_rose,
-            'results': self.results
-        }
-
-
 class ProjectManager:
     """
-    Gestiona projectes de Continuum
-    
-    Estructura d'un projecte:
-    project/
-    ├── project.json          # Configuració
-    ├── data/
-    │   ├── met/             # Dades meteorològiques
-    │   ├── turbines/        # Fitxers de turbines
-    │   ├── topography/      # Dades topogràfiques
-    │   └── results/        # Resultats de càlculs
-    └── exports/             # Exportacions
+    Full project management with persistence
     """
     
-    def __init__(self, projects_dir: str = "projects"):
-        self.projects_dir = Path(projects_dir)
-        self.projects_dir.mkdir(parents=True, exist_ok=True)
-        self.current_project: Optional[ProjectData] = None
+    def __init__(self, projects_base: str = "projects"):
+        self.projects_base = Path(projects_base)
+        self.projects_base.mkdir(parents=True, exist_ok=True)
+        logger.info("Project manager initialized", base=str(self.projects_base))
     
-    def create_project(
-        self,
-        name: str,
-        description: str = "",
-        author: str = ""
-    ) -> ProjectData:
+    def create_project(self, name: str, description: str = "", author: str = "") -> Dict[str, Any]:
         """
-        Crea un nou projecte
-        
-        Args:
-            name: Nom del projecte
-            description: Descripció
-            author: Autor
-            
-        Returns:
-            ProjectData amb el projecte creat
-        """
-        # Netejar nom per usar com a carpeta
-        safe_name = self._sanitize_name(name)
-        
-        # Crear directori
-        project_dir = self.projects_dir / safe_name
-        project_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Subdirectoris
-        (project_dir / "data").mkdir(exist_ok=True)
-        (project_dir / "data/met").mkdir(exist_ok=True)
-        (project_dir / "data/turbines").mkdir(exist_ok=True)
-        (project_dir / "data/topography").mkdir(exist_ok=True)
-        (project_dir / "data/results").mkdir(exist_ok=True)
-        (project_dir / "exports").mkdir(exist_ok=True)
-        
-        # Configuració
-        config = ProjectConfig(
-            name=name,
-            description=description,
-            created_at=datetime.now().isoformat(),
-            updated_at=datetime.now().isoformat(),
-            author=author
-        )
-        
-        # Crear projecte
-        self.current_project = ProjectData(
-            config=config,
-            met_sites=[],
-            turbines=[],
-            topography=None,
-            land_cover=None,
-            wind_rose=None,
-            results={}
-        )
-        
-        # Guardar config
-        self._save_config(project_dir, config)
-        
-        logger.info("Project created", name=name, path=str(project_dir))
-        
-        return self.current_project
-    
-    def save_project(self, project: ProjectData = None) -> str:
-        """
-        Guarda el projecte actual
-        
-        Args:
-            project: Projecte a guardar (current si és None)
-            
-        Returns:
-            Path del projecte guardat
-        """
-        if project is None:
-            project = self.current_project
-        
-        if project is None:
-            raise ValueError("No project to save")
-        
-        safe_name = self._sanitize_name(project.config.name)
-        project_dir = self.projects_dir / safe_name
-        
-        # Actualitzar timestamp
-        project.config.updated_at = datetime.now().isoformat()
-        
-        # Guardar config
-        self._save_config(project_dir, project.config)
-        
-        # Guardar dades
-        self._save_project_data(project_dir, project)
-        
-        logger.info("Project saved", name=project.config.name, path=str(project_dir))
-        
-        return str(project_dir)
-    
-    def load_project(self, name: str) -> ProjectData:
-        """
-        Carrega un projecte existent
-        
-        Args:
-            name: Nom del projecte
-            
-        Returns:
-            ProjectData carregat
+        Create a new project with directory structure
         """
         safe_name = self._sanitize_name(name)
-        project_dir = self.projects_dir / safe_name
+        project_path = self.projects_base / safe_name
         
-        if not project_dir.exists():
-            raise ValueError(f"Project not found: {name}")
+        if project_path.exists():
+            raise ValueError(f"Project '{name}' already exists")
         
-        # Carregar config
-        config = self._load_config(project_dir)
+        # Create directory structure
+        dirs = [
+            "",
+            "data/met",
+            "data/turbines",
+            "data/topography",
+            "data/landcover",
+            "data/results",
+            "exports"
+        ]
         
-        # Carregar dades
-        project = self._load_project_data(project_dir, config)
+        for d in dirs:
+            (project_path / d).mkdir(parents=True, exist_ok=True)
         
-        self.current_project = project
+        # Create project.json
+        project_data = {
+            "name": name,
+            "description": description,
+            "author": author,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "version": "2.1.0",
+            "status": "active",
+            "files": {
+                "met": [],
+                "turbines": [],
+                "topography": [],
+                "landcover": [],
+                "results": []
+            },
+            "config": {}
+        }
         
-        logger.info("Project loaded", name=name)
+        config_path = project_path / "project.json"
+        with open(config_path, 'w') as f:
+            json.dump(project_data, f, indent=2)
         
-        return project
+        logger.info("Project created", name=name, path=str(project_path))
+        
+        return project_data
+    
+    def save_file(self, project_name: str, file_content: bytes, filename: str, file_type: str) -> Dict[str, Any]:
+        """
+        Save a file to a project
+        """
+        safe_name = self._sanitize_name(project_name)
+        project_path = self.projects_base / safe_name
+        
+        if not project_path.exists():
+            raise ValueError(f"Project '{project_name}' does not exist")
+        
+        # Determine subdirectory
+        type_map = {
+            "met": "data/met",
+            "turbines": "data/turbines",
+            "topography": "data/topography",
+            "landcover": "data/landcover",
+            "results": "data/results"
+        }
+        
+        subdir = type_map.get(file_type, "data")
+        save_path = project_path / subdir / filename
+        
+        # Save file
+        with open(save_path, 'wb') as f:
+            f.write(file_content)
+        
+        # Update project.json
+        config_path = project_path / "project.json"
+        with open(config_path, 'r') as f:
+            project_data = json.load(f)
+        
+        project_data["files"][file_type].append({
+            "filename": filename,
+            "path": str(save_path),
+            "type": file_type,
+            "uploaded_at": datetime.now().isoformat()
+        })
+        project_data["updated_at"] = datetime.now().isoformat()
+        
+        with open(config_path, 'w') as f:
+            json.dump(project_data, f, indent=2)
+        
+        logger.info("File saved", project=project_name, filename=filename, type=file_type)
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "path": str(save_path),
+            "type": file_type
+        }
+    
+    def get_project(self, name: str) -> Optional[Dict]:
+        """
+        Load a project
+        """
+        safe_name = self._sanitize_name(name)
+        project_path = self.projects_base / safe_name / "project.json"
+        
+        if not project_path.exists():
+            return None
+        
+        with open(project_path, 'r') as f:
+            return json.load(f)
     
     def list_projects(self) -> list:
         """
-        Llista tots els projectes
+        List all projects
         """
         projects = []
         
-        for item in self.projects_dir.iterdir():
-            if item.is_dir():
-                config_path = item / "project.json"
+        for project_path in self.projects_base.iterdir():
+            if project_path.is_dir():
+                config_path = project_path / "project.json"
                 if config_path.exists():
-                    try:
-                        with open(config_path, 'r') as f:
-                            config = json.load(f)
-                        projects.append({
-                            'name': config['name'],
-                            'description': config.get('description', ''),
-                            'created_at': config.get('created_at', ''),
-                            'updated_at': config.get('updated_at', ''),
-                            'path': str(item)
-                        })
-                    except Exception as e:
-                        logger.warning("Error loading project config", error=str(e))
+                    with open(config_path, 'r') as f:
+                        try:
+                            data = json.load(f)
+                            projects.append({
+                                "name": data.get("name"),
+                                "description": data.get("description", ""),
+                                "author": data.get("author", ""),
+                                "created_at": data.get("created_at", ""),
+                                "updated_at": data.get("updated_at", ""),
+                                "status": data.get("status", "active"),
+                                "path": str(project_path)
+                            })
+                        except Exception as e:
+                            logger.warning("Error loading project", error=str(e))
         
-        return sorted(projects, key=lambda x: x.get('updated_at', ''), reverse=True)
+        return sorted(projects, key=lambda x: x.get("updated_at", ""), reverse=True)
     
     def delete_project(self, name: str) -> bool:
         """
-        Elimina un projecte
+        Delete a project
         """
         safe_name = self._sanitize_name(name)
-        project_dir = self.projects_dir / safe_name
+        project_path = self.projects_base / safe_name
         
-        if project_dir.exists():
-            shutil.rmtree(project_dir)
+        if project_path.exists():
+            shutil.rmtree(project_path)
             logger.info("Project deleted", name=name)
             return True
         
         return False
     
-    def export_project(
-        self,
-        project: ProjectData = None,
-        format: str = "zip",
-        output_path: str = None
-    ) -> str:
+    def get_files(self, name: str, file_type: str = None) -> list:
         """
-        Exporta el projecte a ZIP
-        
-        Args:
-            project: Projecte a exportar
-            format: Format d'export (només ZIP ara)
-            output_path: Path de sortida
-            
-        Returns:
-            Path del fitxer exportat
+        Get files from a project
         """
-        if project is None:
-            project = self.current_project
+        project = self.get_project(name)
+        if not project:
+            return []
         
-        if project is None:
-            raise ValueError("No project to export")
+        if file_type:
+            return project.get("files", {}).get(file_type, [])
         
-        safe_name = self._sanitize_name(project.config.name)
+        all_files = []
+        for files in project.get("files", {}).values():
+            all_files.extend(files)
         
-        if output_path is None:
-            output_path = str(self.projects_dir / f"{safe_name}.zip")
-        
-        with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Afegir project.json
-            config_data = json.dumps(project.to_dict(), indent=2)
-            zipf.writestr("project.json", config_data)
-            
-            # Afegir directoris de dades
-            project_dir = self.projects_dir / safe_name
-            
-            for root, dirs, files in os.walk(project_dir):
-                for file in files:
-                    file_path = Path(root) / file
-                    arcname = str(file_path.relative_to(project_dir))
-                    zipf.write(file_path, arcname)
-        
-        logger.info("Project exported", name=project.config.name, path=output_path)
-        
-        return output_path
+        return all_files
     
-    def import_project(self, filepath: str) -> ProjectData:
+    def save_result(self, project_name: str, result_name: str, result_data: dict, result_type: str):
         """
-        Importa un projecte des de ZIP
-        
-        Args:
-            filepath: Path del fitxer ZIP
-            
-        Returns:
-            ProjectData importat
+        Save analysis results to a project
         """
-        filepath = Path(filepath)
-        temp_dir = self.projects_dir / "import_temp"
+        safe_name = self._sanitize_name(project_name)
+        project_path = self.projects_base / safe_name / "data/results"
         
-        # Extraure
-        with zipfile.ZipFile(filepath, 'r') as zipf:
-            zipf.extractall(temp_dir)
+        result_path = project_path / f"{result_name}.json"
         
-        # Carregar
-        project = self.load_project(temp_dir.name)
+        with open(result_path, 'w') as f:
+            json.dump(result_data, f, indent=2)
         
-        # Moure a ubicació final
-        safe_name = self._sanitize_name(project.config.name)
-        final_dir = self.projects_dir / safe_name
+        logger.info("Result saved", project=project_name, result=result_name)
         
-        if final_dir.exists():
-            shutil.rmtree(final_dir)
-        
-        shutil.move(str(temp_dir), str(final_dir))
-        
-        # Recarregar
-        project = self.load_project(safe_name)
-        
-        logger.info("Project imported", name=project.config.name)
-        
-        return project
+        return {"path": str(result_path)}
     
     def _sanitize_name(self, name: str) -> str:
-        """Neteja el nom per usar com a carpeta"""
+        """Sanitize project name for filesystem"""
         return "".join(c for c in name if c.isalnum() or c in "-_ ").strip().replace(" ", "_")
-    
-    def _save_config(self, project_dir: Path, config: ProjectConfig):
-        """Guarda la configuració"""
-        config_path = project_dir / "project.json"
-        with open(config_path, 'w') as f:
-            json.dump(asdict(config), f, indent=2)
-    
-    def _load_config(self, project_dir: Path) -> ProjectConfig:
-        """Carrega la configuració"""
-        config_path = project_dir / "project.json"
-        with open(config_path, 'r') as f:
-            data = json.load(f)
-        return ProjectConfig(**data)
-    
-    def _save_project_data(self, project_dir: Path, project: ProjectData):
-        """Guarda les dades del projecte"""
-        # Guardar JSON principal amb metadades
-        data = project.to_dict()
-        
-        # Guardar a project.json (sobrescriu amb dades completes)
-        with open(project_dir / "project.json", 'w') as f:
-            json.dump(data, f, indent=2)
-    
-    def _load_project_data(self, project_dir: Path, config: ProjectConfig) -> ProjectData:
-        """Carrega les dades del projecte"""
-        # Carregar project.json
-        with open(project_dir / "project.json", 'r') as f:
-            data = json.load(f)
-        
-        return ProjectData(
-            config=config,
-            met_sites=data.get('met_sites', []),
-            turbines=data.get('turbines', []),
-            topography=data.get('topography'),
-            land_cover=data.get('land_cover'),
-            wind_rose=data.get('wind_rose'),
-            results=data.get('results', {})
-        )
-
-
-# Import os per walk
-import os
