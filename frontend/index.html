@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuum Web - Wind Resource Toolkit</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🌬️</span>
+            <span class="logo-text">Continuum</span>
+        </div>
+        <ul class="nav-links">
+            <li class="active" data-page="dashboard">📊 Dashboard</li>
+            <li data-page="met-filter">🌬️ Met Filter</li>
+            <li data-page="mcp">🔗 MCP</li>
+            <li data-page="wake">💨 Wake Model</li>
+            <li data-page="layout">📐 Layout</li>
+            <li data-page="neural-mcp">🧠 Neural MCP</li>
+        </ul>
+        <div class="api-status">
+            <span class="status-dot"></span>
+            <span class="status-text">API Connected</span>
+        </div>
+    </nav>
+
+    <main class="content">
+        <!-- Dashboard -->
+        <section id="dashboard" class="page active">
+            <h1>Wind Resource Dashboard</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🌬️</div>
+                    <div class="stat-info">
+                        <h3>Wind Speed</h3>
+                        <p class="stat-value" id="dash-ws">-- m/s</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📐</div>
+                    <div class="stat-info">
+                        <h3>Turbines</h3>
+                        <p class="stat-value" id="dash-turbines">--</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <h3>Power</h3>
+                        <p class="stat-value" id="dash-power">-- MW</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📉</div>
+                    <div class="stat-info">
+                        <h3>Wake Loss</h3>
+                        <p class="stat-value" id="dash-wake">--%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button onclick="showPage('met-filter')" class="action-btn">
+                        🌬️ Filter Met Data
+                    </button>
+                    <button onclick="showPage('mcp')" class="action-btn">
+                        🔗 Run MCP
+                    </button>
+                    <button onclick="showPage('wake')" class="action-btn">
+                        💨 Calculate Wake
+                    </button>
+                    <button onclick="showPage('layout')" class="action-btn">
+                        📐 Design Layout
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Met Filter -->
+        <section id="met-filter" class="page">
+            <h1>🌬️ Met Data Filter</h1>
+            <div class="card">
+                <textarea id="met-input" placeholder='[{"wind_speed": 8.5, "wind_direction": 270, "temperature": 15}, ...]'></textarea>
+                <div class="filters-row">
+                    <label><input type="checkbox" id="filter-shadow" checked> Tower Shadow</label>
+                    <label><input type="checkbox" id="filter-ice" checked> Ice Detection</label>
+                    <label><input type="checkbox" id="filter-std" checked> Std Filter</label>
+                </div>
+                <button onclick="runMetFilter()" class="primary-btn">Run Filter</button>
+            </div>
+            <div class="results" id="met-results"></div>
+        </section>
+
+        <!-- MCP -->
+        <section id="mcp" class="page">
+            <h1>🔗 Measure-Correlate-Predict</h1>
+            <div class="card">
+                <div class="input-group">
+                    <label>Method</label>
+                    <select id="mcp-method">
+                        <option value="orthogonal">Orthogonal Regression</option>
+                        <option value="bins">Method of Bins</option>
+                        <option value="matrix">Matrix-LastWS</option>
+                    </select>
+                </div>
+                <textarea id="mcp-ref" placeholder='Reference Data: [{"wind_speed": 8.5, "wind_direction": 270}, ...]'></textarea>
+                <textarea id="mcp-target" placeholder='Target Data: [{"wind_speed": 8.1, "wind_direction": 275}, ...]'></textarea>
+                <button onclick="runMCP()" class="primary-btn">Run MCP</button>
+            </div>
+            <div class="results" id="mcp-results"></div>
+        </section>
+
+        <!-- Wake Model -->
+        <section id="wake" class="page">
+            <h1>💨 Wake Loss Model</h1>
+            <div class="card">
+                <div class="turbine-inputs">
+                    <h3>Turbines</h3>
+                    <div id="turbine-list"></div>
+                    <button onclick="addTurbine()" class="secondary-btn">+ Add Turbine</button>
+                </div>
+                <div class="input-group">
+                    <label>Wake Model</label>
+                    <select id="wake-model">
+                        <option value="jensen">Jensen</option>
+                        <option value="larsen">Larsen</option>
+                    </select>
+                </div>
+                <button onclick="runWake()" class="primary-btn">Calculate Wake Losses</button>
+            </div>
+            <div class="results" id="wake-results"></div>
+        </section>
+
+        <!-- Layout -->
+        <section id="layout" class="page">
+            <h1>📐 Layout Design & Optimization</h1>
+            <div class="card">
+                <div class="layout-methods">
+                    <div class="method-card" onclick="createGridLayout()">
+                        <div class="method-icon">🔲</div>
+                        <h3>Grid Layout</h3>
+                        <p>Regular grid pattern</p>
+                    </div>
+                    <div class="method-card" onclick="createStaggeredLayout()">
+                        <div class="method-icon">📐</div>
+                        <h3>Staggered</h3>
+                        <p>Offset rows for efficiency</p>
+                    </div>
+                    <div class="method-card" onclick="optimizeLayout()">
+                        <div class="method-icon">🧬</div>
+                        <h3>GA Optimize</h3>
+                        <p>Genetic Algorithm optimization</p>
+                    </div>
+                </div>
+                <div id="layout-canvas" class="layout-canvas">
+                    <canvas id="layoutCanvas"></canvas>
+                </div>
+                <div class="layout-stats" id="layout-stats"></div>
+            </div>
+        </section>
+
+        <!-- Neural MCP -->
+        <section id="neural-mcp" class="page">
+            <h1>🧠 Neural MCP</h1>
+            <div class="card">
+                <div class="neural-config">
+                    <div class="input-group">
+                        <label>Hidden Layers</label>
+                        <input type="text" id="neural-layers" value="64, 32, 16" placeholder="64, 32, 16">
+                    </div>
+                    <div class="input-group">
+                        <label>Epochs</label>
+                        <input type="number" id="neural-epochs" value="500">
+                    </div>
+                    <div class="input-group">
+                        <label>Learning Rate</label>
+                        <input type="number" step="0.0001" id="neural-lr" value="0.001">
+                    </div>
+                </div>
+                <textarea id="neural-ref" placeholder='Reference Data: [{"wind_speed": 8.5, "wind_direction": 270}, ...]'></textarea>
+                <textarea id="neural-target" placeholder='Target Data: [{"wind_speed": 8.1, "wind_direction": 275}, ...]'></textarea>
+                <button onclick="runNeuralMCP()" class="primary-btn">Train Neural Network</button>
+            </div>
+            <div class="results" id="neural-results"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
