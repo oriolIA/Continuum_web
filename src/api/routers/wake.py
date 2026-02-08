@@ -6,7 +6,7 @@ Endpoints per a modelat de pèrdues de wake
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import list
+from typing import List, Tuple
 import numpy as np
 
 from src.calculations.wake import WakeCollection, WakeModelConfig, calculate_wake_losses
@@ -25,14 +25,14 @@ class TurbineInput(BaseModel):
 
 
 class WakeRequest(BaseModel):
-    turbines: list[TurbineInput]
+    turbines: List[TurbineInput]
     grid_resolution: int = 50
     sectors: int = 12
 
 
 class SectorLoss(BaseModel):
     sector: int
-    direction_range: tuple[float, float]
+    direction_range: Tuple[float, float]
     wake_loss_percent: float
 
 
@@ -40,7 +40,7 @@ class WakeResponse(BaseModel):
     global_wake_loss_percent: float
     sector_losses: list[SectorLoss]
     n_turbines: int
-    grid_shape: tuple
+    grid_shape: Tuple[int, int]
 
 
 @router.post("/calculate", response_model=WakeResponse)
