@@ -156,14 +156,10 @@ async def delete_file(project: str, filename: str, file_type: str = Form(...)):
             
             # Update project.json
             project_data["files"][file_type].remove(f)
-            config_path = Path(projects_base) / project / "project.json"
+            config_path = project_manager.projects_base / project / "project.json"
             with open(config_path, 'w') as f:
                 json.dump(project_data, f)
             
             return {"success": True, "filename": filename}
     
     raise HTTPException(status_code=404, detail="File not found")
-
-
-# Global for delete endpoint
-from src.core.project_manager import projects_base
