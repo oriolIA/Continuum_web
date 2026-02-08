@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Continuum Web - Wind Resource Toolkit</title>
+    <title>Continuum Web - Wind Flow Model</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
@@ -16,379 +16,456 @@
         <div class="wave wave3"></div>
     </div>
 
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="logo">
-            <div class="logo-icon-wrapper">
-                <i class="fas fa-wind"></i>
-            </div>
-            <div class="logo-text">
-                <span class="brand">Continuum</span>
-                <span class="tagline">Wind Toolkit</span>
-            </div>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-wind"></i>
+            <span>Continuum</span>
         </div>
         
-        <ul class="nav-links">
-            <li class="active" data-page="dashboard">
-                <i class="fas fa-chart-line"></i>
-                <span>Dashboard</span>
+        <ul class="nav-menu">
+            <li class="nav-item dropdown">
+                <a href="#"><i class="fas fa-file"></i> File</a>
+                <div class="dropdown-content">
+                    <a href="#" onclick="newProject()"><i class="fas fa-plus"></i> New (Ctrl+N)</a>
+                    <a href="#" onclick="openProject()"><i class="fas fa-folder-open"></i> Open (Ctrl+O)</a>
+                    <a href="#" onclick="saveProject()"><i class="fas fa-save"></i> Save (Ctrl+S)</a>
+                    <a href="#"><i class="fas fa-save"></i> Save As (Ctrl+A)</a>
+                    <div class="divider"></div>
+                    <a href="#"><i class="fas fa-times"></i> Close (Ctrl+X)</a>
+                </div>
             </li>
-            <li data-page="met-filter">
-                <i class="fas fa-wind"></i>
-                <span>Met Filter</span>
+            <li class="nav-item dropdown">
+                <a href="#"><i class="fas fa-tools"></i> Tools</a>
+                <div class="dropdown-content">
+                    <a href="#"><i class="fas fa-code"></i> Generate Headers</a>
+                    <div class="divider"></div>
+                    <a href="#"><i class="fas fa-cloud-download-alt"></i> Download Reanalysis Data</a>
+                    <a href="#"><i class="fas fa-mountain"></i> Download Topography Data</a>
+                </div>
             </li>
-            <li data-page="mcp">
-                <i class="fas fa-project-diagram"></i>
-                <span>MCP</span>
-            </li>
-            <li data-page="wake">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Wake Model</span>
-            </li>
-            <li data-page="layout">
-                <i class="fas fa-th"></i>
-                <span>Layout</span>
-            </li>
-            <li data-page="neural-mcp">
-                <i class="fas fa-brain"></i>
-                <span>Neural MCP</span>
+            <li class="nav-item dropdown">
+                <a href="#"><i class="fas fa-help-circle"></i> Help</a>
+                <div class="dropdown-content">
+                    <a href="#"><i class="fas fa-question-circle"></i> Show Help</a>
+                    <a href="#"><i class="fas fa-info-circle"></i> About</a>
+                </div>
             </li>
         </ul>
         
-        <div class="sidebar-footer">
-            <div class="api-status" id="api-status">
-                <div class="status-indicator"></div>
-                <span>API Connected</span>
-            </div>
-            <div class="version">v2.0</div>
+        <div class="nav-actions">
+            <button class="btn-icon" onclick="saveProject()" title="Save">
+                <i class="fas fa-save"></i>
+            </button>
+            <button class="btn-icon" onclick="openProject()" title="Open">
+                <i class="fas fa-folder-open"></i>
+            </button>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="content">
-        <!-- Dashboard -->
-        <section id="dashboard" class="page active">
-            <div class="page-header">
-                <h1>Wind Resource Dashboard</h1>
-                <p class="subtitle">Real-time analysis and monitoring</p>
+    <!-- Main Layout -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>Navigation</h3>
             </div>
+            <ul class="sidebar-nav">
+                <li class="active" data-tab="input">
+                    <i class="fas fa-file-import"></i> Input
+                </li>
+                <li data-tab="met-data-ts">
+                    <i class="fas fa-clock"></i> Met Data TS
+                </li>
+                <li data-tab="met-qc">
+                    <i class="fas fa-filter"></i> Met Data QC
+                </li>
+                <li data-tab="merra">
+                    <i class="fas fa-cloud"></i> Reanalysis
+                </li>
+                <li data-tab="mcp">
+                    <i class="fas fa-project-diagram"></i> MCP
+                </li>
+                <li data-tab="summary">
+                    <i class="fas fa-list"></i> Summary
+                </li>
+                <li data-tab="gross">
+                    <i class="fas fa-bolt"></i> Gross/Power
+                </li>
+                <li data-tab="exceedance">
+                    <i class="fas fa-chart-line"></i> Exceedance
+                </li>
+                <li data-tab="net-estimates">
+                    <i class="fas fa-calculator"></i> Net Estimates
+                </li>
+                <li data-tab="site-conditions">
+                    <i class="fas fa-globe"></i> Site Conditions
+                </li>
+                <li data-tab="monthly">
+                    <i class="fas fa-calendar-alt"></i> Monthly
+                </li>
+                <li data-tab="maps">
+                    <i class="fas fa-map"></i> Maps
+                </li>
+                <li data-tab="suitability">
+                    <i class="fas fa-check-circle"></i> Suitability
+                </li>
+            </ul>
             
-            <div class="stats-grid">
-                <div class="stat-card glass">
-                    <div class="stat-icon">
-                        <i class="fas fa-wind"></i>
+            <div class="sidebar-footer">
+                <div class="api-status" id="api-status">
+                    <div class="status-indicator"></div>
+                    <span>API Connected</span>
+                </div>
+                <div class="version">v2.1</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Tab: Input -->
+            <section id="tab-input" class="tab-content active">
+                <div class="page-header">
+                    <h1><i class="fas fa-file-import"></i> Input Data</h1>
+                    <p class="subtitle">Import and configure project data</p>
+                </div>
+                
+                <div class="panel-grid">
+                    <!-- Project Config -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h2><i class="fas fa-cog"></i> Project Configuration</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label>Project Name</label>
+                                    <input type="text" id="project-name" placeholder="My Wind Project">
+                                </div>
+                                <div class="input-group">
+                                    <label>Author</label>
+                                    <input type="text" id="project-author" placeholder="Your name">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Description</label>
+                                <textarea id="project-description" placeholder="Project description..."></textarea>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-content">
-                        <h3>Wind Speed</h3>
-                        <p class="stat-value" id="dash-ws">--<span class="unit">m/s</span></p>
-                        <div class="stat-trend positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>Optimal</span>
+
+                    <!-- Import Met Data -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h2><i class="fas fa-cloud-upload-alt"></i> Import Met Data</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-formats">
+                                <span class="format-tag">.TAB</span>
+                                <span class="format-tag">.CSV</span>
+                                <span class="format-tag">.TXT</span>
+                            </div>
+                            <div class="upload-area" onclick="document.getElementById('met-file').click()">
+                                <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                                <p>Drag & drop files or click to browse</p>
+                                <input type="file" id="met-file" accept=".tab,.csv,.txt" multiple hidden>
+                            </div>
+                            <button class="primary-btn" onclick="importMetData()">
+                                <i class="fas fa-import"></i> Import Met Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Import Turbines -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h2><i class="fas fa-fan"></i> Import Turbines</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-formats">
+                                <span class="format-tag">.CSV</span>
+                                <span class="format-tag">.TXT</span>
+                            </div>
+                            <div class="upload-area" onclick="document.getElementById('turbine-file').click()">
+                                <i class="fas fa-fan fa-3x"></i>
+                                <p>Import turbine coordinates</p>
+                                <input type="file" id="turbine-file" accept=".csv,.txt" multiple hidden>
+                            </div>
+                            <button class="primary-btn" onclick="importTurbines()">
+                                <i class="fas fa-import"></i> Import Turbines
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Topography -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h2><i class="fas fa-mountain"></i> Topography Data</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-formats">
+                                <span class="format-tag">.TIF</span>
+                                <span class="format-tag">.ADF</span>
+                                <span class="format-tag">.MAP</span>
+                            </div>
+                            <div class="upload-area" onclick="document.getElementById('topo-file').click()">
+                                <i class="fas fa-mountain fa-3x"></i>
+                                <p>Load elevation/terrain data</p>
+                                <input type="file" id="topo-file" accept=".tif,.tiff,.adf,.map" hidden>
+                            </div>
+                            <button class="primary-btn" onclick="importTopography()">
+                                <i class="fas fa-upload"></i> Load Topography
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Land Cover -->
+                    <div class="card glass">
+                        <div class="card-header">
+                            <h2><i class="fas fa-tree"></i> Land Cover</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-formats">
+                                <span class="format-tag">.TIF</span>
+                                <span class="format-tag">.TIFF</span>
+                            </div>
+                            <div class="upload-area" onclick="document.getElementById('lc-file').click()">
+                                <i class="fas fa-leaf fa-3x"></i>
+                                <p>Load land cover data</p>
+                                <input type="file" id="lc-file" accept=".tif,.tiff" hidden>
+                            </div>
+                            <button class="primary-btn" onclick="importLandCover()">
+                                <i class="fas fa-upload"></i> Load Land Cover
+                            </button>
                         </div>
                     </div>
                 </div>
-                
-                <div class="stat-card glass">
-                    <div class="stat-icon turbine">
-                        <i class="fas fa-fan"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3>Turbines</h3>
-                        <p class="stat-value" id="dash-turbines">--</p>
-                        <div class="stat-meta">Active</div>
-                    </div>
+            </section>
+
+            <!-- Tab: Met Data TS -->
+            <section id="tab-met-data-ts" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-clock"></i> Met Data Time Series</h1>
+                    <p class="subtitle">Time series analysis and visualization</p>
                 </div>
-                
-                <div class="stat-card glass">
-                    <div class="stat-icon power">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3>Power Output</h3>
-                        <p class="stat-value" id="dash-power">--<span class="unit">MW</span></p>
-                        <div class="stat-meta">Estimated</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card glass">
-                    <div class="stat-icon wake">
-                        <i class="fas fa-chart-area"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3>Wake Loss</h3>
-                        <p class="stat-value" id="dash-wake">--<span class="unit">%</span></p>
-                        <div class="stat-trend negative">
-                            <i class="fas fa-arrow-down"></i>
-                            <span>Minimized</span>
+                <div class="card glass">
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="metTimeSeriesChart"></canvas>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="dashboard-grid">
-                <div class="card glass wind-rose-card">
+            </section>
+
+            <!-- Tab: Met Data QC -->
+            <section id="tab-met-qc" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-filter"></i> Met Data Quality Control</h1>
+                    <p class="subtitle">Filter and clean meteorological data</p>
+                </div>
+                <div class="card glass">
                     <div class="card-header">
-                        <h2><i class="fas fa-compass"></i> Wind Rose</h2>
+                        <h2>QC Filters</h2>
                     </div>
                     <div class="card-body">
-                        <canvas id="windRoseChart"></canvas>
+                        <div class="filter-options">
+                            <label class="toggle-option">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Tower Shadow</span>
+                            </label>
+                            <label class="toggle-option">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Ice Detection</span>
+                            </label>
+                            <label class="toggle-option">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Std Filter</span>
+                            </label>
+                        </div>
+                        <button class="primary-btn" onclick="runMetQC()">
+                            <i class="fas fa-play"></i> Run QC Filters
+                        </button>
                     </div>
                 </div>
-                
-                <div class="card glass quick-actions-card">
+            </section>
+
+            <!-- Tab: Reanalysis (MERRA) -->
+            <section id="tab-merra" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-cloud"></i> Reanalysis Data</h1>
+                    <p class="subtitle">Download and process MERRA/ERA5 data</p>
+                </div>
+                <div class="card glass">
                     <div class="card-header">
-                        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                        <h2><i class="fas fa-download"></i> Download Reanalysis</h2>
                     </div>
                     <div class="card-body">
-                        <div class="action-grid">
-                            <button onclick="showPage('met-filter')" class="action-btn glass">
-                                <div class="action-icon"><i class="fas fa-filter"></i></div>
-                                <span>Filter Data</span>
+                        <div class="data-sources">
+                            <button class="source-btn" onclick="downloadReanalysis('merra')">
+                                <i class="fas fa-cloud-download-alt"></i>
+                                <span>MERRA-2</span>
                             </button>
-                            <button onclick="showPage('mcp')" class="action-btn glass">
-                                <div class="action-icon"><i class="fas fa-project-diagram"></i></div>
-                                <span>Run MCP</span>
-                            </button>
-                            <button onclick="showPage('wake')" class="action-btn glass">
-                                <div class="action-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                <span>Wake Model</span>
-                            </button>
-                            <button onclick="showPage('layout')" class="action-btn glass">
-                                <div class="action-icon"><i class="fas fa-th"></i></div>
-                                <span>Design Layout</span>
+                            <button class="source-btn" onclick="downloadReanalysis('era5')">
+                                <i class="fas fa-globe-europe"></i>
+                                <span>ERA5</span>
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Met Filter -->
-        <section id="met-filter" class="page">
-            <div class="page-header">
-                <h1><i class="fas fa-wind"></i> Met Data Filter</h1>
-                <p class="subtitle">Quality control and data filtering</p>
-            </div>
-            
-            <div class="card glass">
-                <div class="card-header">
-                    <h2><i class="fas fa-upload"></i> Input Data</h2>
+            <!-- Tab: MCP -->
+            <section id="tab-mcp" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-project-diagram"></i> Measure-Correlate-Predict</h1>
+                    <p class="subtitle">Long-term estimation using reference data</p>
                 </div>
-                <div class="card-body">
-                    <textarea id="met-input" placeholder='[{"wind_speed": 8.5, "wind_direction": 270, "temperature": 15}, ...]'></textarea>
-                    
-                    <div class="filter-options">
-                        <label class="toggle-option">
-                            <input type="checkbox" id="filter-shadow" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Tower Shadow</span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox" id="filter-ice" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Ice Detection</span>
-                        </label>
-                        <label class="toggle-option">
-                            <input type="checkbox" id="filter-std" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Std Filter</span>
-                        </label>
+                <div class="card glass">
+                    <div class="card-header">
+                        <h2>MCP Configuration</h2>
                     </div>
-                    
-                    <button onclick="runMetFilter()" class="primary-btn glow">
-                        <i class="fas fa-play"></i> Run Filter
-                    </button>
+                    <div class="card-body">
+                        <select id="mcp-method">
+                            <option value="orthogonal">Orthogonal Regression</option>
+                            <option value="bins">Method of Bins</option>
+                            <option value="matrix">Matrix-LastWS</option>
+                        </select>
+                        <button class="primary-btn" onclick="runMCP()">
+                            <i class="fas fa-play"></i> Run MCP
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="results glass" id="met-results">
-                <div class="results-placeholder">
-                    <i class="fas fa-chart-line"></i>
-                    <p>Results will appear here</p>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- MCP -->
-        <section id="mcp" class="page">
-            <div class="page-header">
-                <h1><i class="fas fa-project-diagram"></i> Measure-Correlate-Predict</h1>
-                <p class="subtitle">Correlation analysis between stations</p>
-            </div>
-            
-            <div class="card glass">
-                <div class="card-header">
-                    <h2><i class="fas fa-sliders-h"></i> Configuration</h2>
+            <!-- Tab: Summary -->
+            <section id="tab-summary" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-list"></i> Met & Turbine Summary</h1>
+                    <p class="subtitle">Overview of all data</p>
                 </div>
-                <div class="card-body">
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Method</label>
-                            <select id="mcp-method">
-                                <option value="orthogonal">Orthogonal Regression</option>
-                                <option value="bins">Method of Bins</option>
-                                <option value="matrix">Matrix-LastWS</option>
-                            </select>
-                        </div>
+                <div class="card glass">
+                    <div class="card-body">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Data Count</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
-                    
-                    <div class="input-row">
-                        <div class="input-group half">
-                            <label>Reference Data</label>
-                            <textarea id="mcp-ref" placeholder='[{"wind_speed": 8.5, "wind_direction": 270}, ...]'></textarea>
-                        </div>
-                        <div class="input-group half">
-                            <label>Target Data</label>
-                            <textarea id="mcp-target" placeholder='[{"wind_speed": 8.1, "wind_direction": 275}, ...]'></textarea>
-                        </div>
-                    </div>
-                    
-                    <button onclick="runMCP()" class="primary-btn glow">
-                        <i class="fas fa-play"></i> Run MCP
-                    </button>
                 </div>
-            </div>
-            
-            <div class="results glass" id="mcp-results">
-                <div class="results-placeholder">
-                    <i class="fas fa-chart-bar"></i>
-                    <p>Results will appear here</p>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Wake Model -->
-        <section id="wake" class="page">
-            <div class="page-header">
-                <h1><i class="fas fa-tachometer-alt"></i> Wake Loss Model</h1>
-                <p class="subtitle">Turbine wake interaction analysis</p>
-            </div>
-            
-            <div class="card glass">
-                <div class="card-header">
-                    <h2><i class="fas fa-fan"></i> Turbines</h2>
-                    <button onclick="addTurbine()" class="secondary-btn">
-                        <i class="fas fa-plus"></i> Add
-                    </button>
+            <!-- Tab: Gross/Power -->
+            <section id="tab-gross" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-bolt"></i> Gross Power Estimation</h1>
+                    <p class="subtitle">Calculate gross energy production</p>
                 </div>
-                <div class="card-body">
-                    <div id="turbine-list" class="turbine-list"></div>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Wake Model</label>
-                            <select id="wake-model">
-                                <option value="jensen">Jensen</option>
-                                <option value="larsen">Larsen</option>
-                            </select>
+                <div class="stats-grid">
+                    <div class="stat-card glass">
+                        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="stat-content">
+                            <h3>Total Capacity</h3>
+                            <p class="stat-value">--<span class="unit">MW</span></p>
                         </div>
                     </div>
-                    
-                    <button onclick="runWake()" class="primary-btn glow">
-                        <i class="fas fa-play"></i> Calculate Wake Losses
-                    </button>
+                    <div class="stat-card glass">
+                        <div class="stat-icon"><i class="fas fa-energy"></i></div>
+                        <div class="stat-content">
+                            <h3>Gross AEP</h3>
+                            <p class="stat-value">--<span class="unit">GWh</span></p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="results glass" id="wake-results">
-                <div class="results-placeholder">
-                    <i class="fas fa-chart-contour"></i>
-                    <p>Results will appear here</p>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Layout -->
-        <section id="layout" class="page">
-            <div class="page-header">
-                <h1><i class="fas fa-th"></i> Layout Design</h1>
-                <p class="subtitle">Wind farm layout optimization</p>
-            </div>
-            
-            <div class="card glass">
-                <div class="card-header">
-                    <h2><i class="fas fa-magic"></i> Methods</h2>
+            <!-- Tab: Exceedance -->
+            <section id="tab-exceedance" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-chart-line"></i> Exceedance Analysis</h1>
+                    <p class="subtitle">Probability of exceedance curves</p>
                 </div>
-                <div class="card-body">
-                    <div class="method-grid">
-                        <div class="method-card" onclick="createGridLayout()">
-                            <div class="method-icon"><i class="fas fa-border-all"></i></div>
-                            <h3>Grid</h3>
-                            <p>Regular pattern</p>
-                        </div>
-                        <div class="method-card" onclick="createStaggeredLayout()">
-                            <div class="method-icon"><i class="fas fa-stream"></i></div>
-                            <h3>Staggered</h3>
-                            <p>Offset rows</p>
-                        </div>
-                        <div class="method-card" onclick="optimizeLayout()">
-                            <div class="method-icon"><i class="fas fa-genetic"></i></div>
-                            <h3>GA Optimize</h3>
-                            <p>Genetic Algorithm</p>
-                        </div>
+                <div class="card glass">
+                    <div class="chart-container">
+                        <canvas id="exceedanceChart"></canvas>
                     </div>
-                    
-                    <div class="layout-canvas-wrapper">
-                        <canvas id="layoutCanvas"></canvas>
-                    </div>
-                    
-                    <div class="layout-stats" id="layout-stats"></div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Neural MCP -->
-        <section id="neural-mcp" class="page">
-            <div class="page-header">
-                <h1><i class="fas fa-brain"></i> Neural MCP</h1>
-                <p class="subtitle">Machine learning based correlation</p>
-            </div>
-            
-            <div class="card glass">
-                <div class="card-header">
-                    <h2><i class="fas fa-network-wired"></i> Neural Network</h2>
+            <!-- Tab: Net Estimates -->
+            <section id="tab-net-estimates" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-calculator"></i> Net Estimates</h1>
+                    <p class="subtitle">Net energy after all losses</p>
                 </div>
-                <div class="card-body">
-                    <div class="neural-config">
-                        <div class="input-group">
-                            <label>Hidden Layers</label>
-                            <input type="text" id="neural-layers" value="64, 32, 16" placeholder="64, 32, 16">
-                        </div>
-                        <div class="input-group">
-                            <label>Epochs</label>
-                            <input type="number" id="neural-epochs" value="500">
-                        </div>
-                        <div class="input-group">
-                            <label>Learning Rate</label>
-                            <input type="number" step="0.0001" id="neural-lr" value="0.001">
+                <div class="losses-panel glass">
+                    <h3>Loss Factors</h3>
+                    <div class="loss-item">
+                        <span>Wake Losses</span>
+                        <span class="loss-value" id="wake-loss">--%</span>
+                    </div>
+                    <div class="loss-item">
+                        <span>Availability</span>
+                        <span class="loss-value">3%</span>
+                    </div>
+                    <div class="loss-item">
+                        <span>Electrical</span>
+                        <span class="loss-value">2%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Site Conditions -->
+            <section id="tab-site-conditions" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-globe"></i> Site Conditions</h1>
+                    <p class="subtitle">Terrain and roughness analysis</p>
+                </div>
+            </section>
+
+            <!-- Tab: Monthly -->
+            <section id="tab-monthly" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-calendar-alt"></i> Monthly Analysis</h1>
+                    <p class="subtitle">Monthly energy distribution</p>
+                </div>
+            </section>
+
+            <!-- Tab: Maps -->
+            <section id="tab-maps" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-map"></i> Maps</h1>
+                    <p class="subtitle">Wind resource maps</p>
+                </div>
+                <div class="card glass">
+                    <div class="map-container">
+                        <div id="windMap" class="map-placeholder">
+                            <i class="fas fa-map-marked-alt fa-3x"></i>
+                            <p>Wind Resource Map</p>
                         </div>
                     </div>
-                    
-                    <div class="input-row">
-                        <div class="input-group half">
-                            <label>Reference Data</label>
-                            <textarea id="neural-ref" placeholder='[{"wind_speed": 8.5, "wind_direction": 270}, ...]'></textarea>
-                        </div>
-                        <div class="input-group half">
-                            <label>Target Data</label>
-                            <textarea id="neural-target" placeholder='[{"wind_speed": 8.1, "wind_direction": 275}, ...]'></textarea>
-                        </div>
-                    </div>
-                    
-                    <button onclick="runNeuralMCP()" class="primary-btn glow">
-                        <i class="fas fa-brain"></i> Train Neural Network
-                    </button>
                 </div>
-            </div>
-            
-            <div class="results glass" id="neural-results">
-                <div class="results-placeholder">
-                    <i class="fas fa-network-wired"></i>
-                    <p>Training results will appear here</p>
+            </section>
+
+            <!-- Tab: Suitability -->
+            <section id="tab-suitability" class="tab-content">
+                <div class="page-header">
+                    <h1><i class="fas fa-check-circle"></i> Site Suitability</h1>
+                    <p class="subtitle">Suitable areas for wind development</p>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
+        </main>
+    </div>
 
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
