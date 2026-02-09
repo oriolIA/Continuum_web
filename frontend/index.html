@@ -25,446 +25,415 @@
         
         <ul class="nav-menu">
             <li class="nav-item dropdown">
-                <a href="#"><i class="fas fa-file"></i> File</a>
+                <a href="#"><i class="fas fa-file"></i> Projecte</a>
                 <div class="dropdown-content">
-                    <a href="#" onclick="newProject()"><i class="fas fa-plus"></i> New (Ctrl+N)</a>
-                    <a href="#" onclick="openProject()"><i class="fas fa-folder-open"></i> Open (Ctrl+O)</a>
-                    <a href="#" onclick="saveProject()"><i class="fas fa-save"></i> Save (Ctrl+S)</a>
-                    <a href="#"><i class="fas fa-save"></i> Save As (Ctrl+A)</a>
+                    <a href="#" onclick="showNewProjectModal()"><i class="fas fa-plus"></i> Nou Projecte</a>
+                    <a href="#" onclick="openProject()"><i class="fas fa-folder-open"></i> Obrir Projecte</a>
+                    <a href="#" onclick="saveProject()"><i class="fas fa-save"></i> Guardar</a>
                     <div class="divider"></div>
-                    <a href="#"><i class="fas fa-times"></i> Close (Ctrl+X)</a>
+                    <a href="#" onclick="closeProject()"><i class="fas fa-times"></i> Tancar</a>
                 </div>
             </li>
             <li class="nav-item dropdown">
-                <a href="#"><i class="fas fa-tools"></i> Tools</a>
+                <a href="#"><i class="fas fa-tools"></i> Eines</a>
                 <div class="dropdown-content">
-                    <a href="#"><i class="fas fa-code"></i> Generate Headers</a>
+                    <a href="#" onclick="runMetFilter()"><i class="fas fa-filter"></i> Filtratge Met</a>
+                    <a href="#" onclick="runMCP()"><i class="fas fa-project-diagram"></i> MCP</a>
+                    <a href="#" onclick="runWake()"><i class="fas fa-wind"></i> Wake</a>
                     <div class="divider"></div>
-                    <a href="#"><i class="fas fa-cloud-download-alt"></i> Download Reanalysis Data</a>
-                    <a href="#"><i class="fas fa-mountain"></i> Download Topography Data</a>
+                    <a href="#" onclick="downloadReanalysis()"><i class="fas fa-cloud-download-alt"></i> Reanalysis</a>
                 </div>
             </li>
             <li class="nav-item dropdown">
-                <a href="#"><i class="fas fa-help-circle"></i> Help</a>
+                <a href="#"><i class="fas fa-help-circle"></i> Ajuda</a>
                 <div class="dropdown-content">
-                    <a href="#"><i class="fas fa-question-circle"></i> Show Help</a>
-                    <a href="#"><i class="fas fa-info-circle"></i> About</a>
+                    <a href="#"><i class="fas fa-question-circle"></i> Manual</a>
+                    <a href="#"><i class="fas fa-info-circle"></i> Versió 2.1</a>
                 </div>
             </li>
         </ul>
         
         <div class="nav-actions">
-            <button class="btn-icon" onclick="saveProject()" title="Save">
-                <i class="fas fa-save"></i>
-            </button>
-            <button class="btn-icon" onclick="openProject()" title="Open">
-                <i class="fas fa-folder-open"></i>
-            </button>
+            <div class="project-status" id="project-status">
+                <i class="fas fa-folder"></i>
+                <span id="current-project-name">Sense projecte</span>
+            </div>
         </div>
     </nav>
 
-    <!-- Main Layout -->
-    <div class="main-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h3>Navigation</h3>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="active" data-tab="input">
-                    <i class="fas fa-file-import"></i> Input
-                </li>
-                <li data-tab="met-data-ts">
-                    <i class="fas fa-clock"></i> Met Data TS
-                </li>
-                <li data-tab="met-qc">
-                    <i class="fas fa-filter"></i> Met Data QC
-                </li>
-                <li data-tab="merra">
-                    <i class="fas fa-cloud"></i> Reanalysis
-                </li>
-                <li data-tab="mcp">
-                    <i class="fas fa-project-diagram"></i> MCP
-                </li>
-                <li data-tab="summary">
-                    <i class="fas fa-list"></i> Summary
-                </li>
-                <li data-tab="gross">
-                    <i class="fas fa-bolt"></i> Gross/Power
-                </li>
-                <li data-tab="exceedance">
-                    <i class="fas fa-chart-line"></i> Exceedance
-                </li>
-                <li data-tab="net-estimates">
-                    <i class="fas fa-calculator"></i> Net Estimates
-                </li>
-                <li data-tab="site-conditions">
-                    <i class="fas fa-globe"></i> Site Conditions
-                </li>
-                <li data-tab="monthly">
-                    <i class="fas fa-calendar-alt"></i> Monthly
-                </li>
-                <li data-tab="maps">
-                    <i class="fas fa-map"></i> Maps
-                </li>
-                <li data-tab="suitability">
-                    <i class="fas fa-check-circle"></i> Suitability
-                </li>
-            </ul>
-            
-            <div class="sidebar-footer">
-                <div class="api-status" id="api-status">
-                    <div class="status-indicator"></div>
-                    <span>API Connected</span>
-                </div>
-                <div class="version">v2.1</div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="content">
-            <!-- Tab: Input -->
-            <section id="tab-input" class="tab-content active">
-                <div class="page-header">
-                    <h1><i class="fas fa-file-import"></i> Input Data</h1>
-                    <p class="subtitle">Import and configure project data</p>
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Welcome Screen (no project) -->
+        <div id="welcome-screen" class="welcome-screen">
+            <div class="welcome-card glass">
+                <i class="fas fa-wind fa-4x"></i>
+                <h1>Continuum Web</h1>
+                <p class="subtitle">Wind Resource Toolkit</p>
+                
+                <div class="welcome-actions">
+                    <button class="primary-btn large" onclick="showNewProjectModal()">
+                        <i class="fas fa-plus"></i>
+                        Nou Projecte
+                    </button>
+                    <button class="secondary-btn large" onclick="openProject()">
+                        <i class="fas fa-folder-open"></i>
+                        Obrir Projecte
+                    </button>
                 </div>
                 
-                <div class="panel-grid">
-                    <!-- Project Config -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h2><i class="fas fa-cog"></i> Project Configuration</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="input-row">
-                                <div class="input-group">
-                                    <label>Project Name</label>
-                                    <input type="text" id="project-name" placeholder="My Wind Project">
-                                </div>
-                                <div class="input-group">
-                                    <label>Author</label>
-                                    <input type="text" id="project-author" placeholder="Your name">
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label>Description</label>
-                                <textarea id="project-description" placeholder="Project description..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Import Met Data -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h2><i class="fas fa-cloud-upload-alt"></i> Import Met Data</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="upload-formats">
-                                <span class="format-tag">.TAB</span>
-                                <span class="format-tag">.CSV</span>
-                                <span class="format-tag">.TXT</span>
-                            </div>
-                            <div class="upload-area" onclick="document.getElementById('met-file').click()">
-                                <i class="fas fa-cloud-upload-alt fa-3x"></i>
-                                <p>Drag & drop files or click to browse</p>
-                                <input type="file" id="met-file" accept=".tab,.csv,.txt" multiple hidden>
-                            </div>
-                            <button class="primary-btn" onclick="importMetData()">
-                                <i class="fas fa-import"></i> Import Met Data
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Import Turbines -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h2><i class="fas fa-fan"></i> Import Turbines</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="upload-formats">
-                                <span class="format-tag">.CSV</span>
-                                <span class="format-tag">.TXT</span>
-                            </div>
-                            <div class="upload-area" onclick="document.getElementById('turbine-file').click()">
-                                <i class="fas fa-fan fa-3x"></i>
-                                <p>Import turbine coordinates</p>
-                                <input type="file" id="turbine-file" accept=".csv,.txt" multiple hidden>
-                            </div>
-                            <button class="primary-btn" onclick="importTurbines()">
-                                <i class="fas fa-import"></i> Import Turbines
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Topography -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h2><i class="fas fa-mountain"></i> Topography Data</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="upload-formats">
-                                <span class="format-tag">.TIF</span>
-                                <span class="format-tag">.ADF</span>
-                                <span class="format-tag">.MAP</span>
-                            </div>
-                            <div class="upload-area" onclick="document.getElementById('topo-file').click()">
-                                <i class="fas fa-mountain fa-3x"></i>
-                                <p>Load elevation/terrain data</p>
-                                <input type="file" id="topo-file" accept=".tif,.tiff,.adf,.map" hidden>
-                            </div>
-                            <button class="primary-btn" onclick="importTopography()">
-                                <i class="fas fa-upload"></i> Load Topography
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Land Cover -->
-                    <div class="card glass">
-                        <div class="card-header">
-                            <h2><i class="fas fa-tree"></i> Land Cover</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="upload-formats">
-                                <span class="format-tag">.TIF</span>
-                                <span class="format-tag">.TIFF</span>
-                            </div>
-                            <div class="upload-area" onclick="document.getElementById('lc-file').click()">
-                                <i class="fas fa-leaf fa-3x"></i>
-                                <p>Load land cover data</p>
-                                <input type="file" id="lc-file" accept=".tif,.tiff" hidden>
-                            </div>
-                            <button class="primary-btn" onclick="importLandCover()">
-                                <i class="fas fa-upload"></i> Load Land Cover
-                            </button>
-                        </div>
-                    </div>
+                <div class="recent-projects">
+                    <h3>Projectes recents</h3>
+                    <div id="recent-list"></div>
                 </div>
-            </section>
+            </div>
+        </div>
 
-            <!-- Tab: Met Data TS -->
-            <section id="tab-met-data-ts" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-clock"></i> Met Data Time Series</h1>
-                    <p class="subtitle">Time series analysis and visualization</p>
+        <!-- Project Dashboard (with project) -->
+        <div id="project-dashboard" class="project-dashboard hidden">
+            
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="project-info">
+                    <h1 id="dashboard-project-name">Projecte</h1>
+                    <p id="dashboard-project-desc"></p>
                 </div>
-                <div class="card glass">
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="metTimeSeriesChart"></canvas>
+                <div class="dashboard-actions">
+                    <button class="primary-btn" onclick="saveProject()">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions Grid -->
+            <div class="quick-actions">
+                <div class="action-card glass" onclick="switchTab('input')">
+                    <i class="fas fa-file-import fa-2x"></i>
+                    <h3>Dades d'Entrada</h3>
+                    <p>Met, Turbines, Topografia</p>
+                </div>
+                
+                <div class="action-card glass" onclick="switchTab('met-qc')">
+                    <i class="fas fa-filter fa-2x"></i>
+                    <h3>Filtratge QC</h3>
+                    <p>Ombra, Gel, STD</p>
+                </div>
+                
+                <div class="action-card glass" onclick="switchTab('mcp')">
+                    <i class="fas fa-project-diagram fa-2x"></i>
+                    <h3>MCP</h3>
+                    <p>Correlació Long-Term</p>
+                </div>
+                
+                <div class="action-card glass" onclick="switchTab('wake')">
+                    <i class="fas fa-wind fa-2x"></i>
+                    <h3>Wake</h3>
+                    <p>Pèrdues per Wake</p>
+                </div>
+                
+                <div class="action-card glass" onclick="switchTab('layout')">
+                    <i class="fas fa-th fa-2x"></i>
+                    <h3>Layout</h3>
+                    <p>Disseny Parc</p>
+                </div>
+                
+                <div class="action-card glass" onclick="switchTab('results')">
+                    <i class="fas fa-chart-bar fa-2x"></i>
+                    <h3>Resultats</h3>
+                    <p>AEP, Excedència</p>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-container">
+                <!-- INPUT TAB -->
+                <section id="tab-input" class="tab-content">
+                    <h2><i class="fas fa-file-import"></i> Dades d'Entrada</h2>
+                    
+                    <div class="upload-grid">
+                        <!-- Met Data -->
+                        <div class="upload-card glass">
+                            <div class="upload-icon">
+                                <i class="fas fa-temperature-high"></i>
+                            </div>
+                            <h3>Dades Met</h3>
+                            <p class="format-info">Formats: .TAB, .CSV, .TXT</p>
+                            <input type="file" id="met-file" accept=".tab,.csv,.txt" multiple hidden>
+                            <button class="primary-btn" onclick="document.getElementById('met-file').click()">
+                                <i class="fas fa-upload"></i> Pujar
+                            </button>
+                            <div class="file-list" id="met-files-list"></div>
+                        </div>
+
+                        <!-- Turbines -->
+                        <div class="upload-card glass">
+                            <div class="upload-icon">
+                                <i class="fas fa-fan"></i>
+                            </div>
+                            <h3>Turbines</h3>
+                            <p class="format-info">Formats: .CSV, .TXT</p>
+                            <input type="file" id="turbine-file" accept=".csv,.txt" multiple hidden>
+                            <button class="primary-btn" onclick="document.getElementById('turbine-file').click()">
+                                <i class="fas fa-upload"></i> Pujar
+                            </button>
+                            <div class="file-list" id="turbine-files-list"></div>
+                        </div>
+
+                        <!-- Topografia -->
+                        <div class="upload-card glass">
+                            <div class="upload-icon">
+                                <i class="fas fa-mountain"></i>
+                            </div>
+                            <h3>Topografia</h3>
+                            <p class="format-info">Formats: .TIF, .ADF, .MAP</p>
+                            <input type="file" id="topo-file" accept=".tif,.tiff,.adf,.map" hidden>
+                            <button class="primary-btn" onclick="document.getElementById('topo-file').click()">
+                                <i class="fas fa-upload"></i> Pujar
+                            </button>
+                            <div class="file-list" id="topo-files-list"></div>
+                        </div>
+
+                        <!-- Land Cover -->
+                        <div class="upload-card glass">
+                            <div class="upload-icon">
+                                <i class="fas fa-tree"></i>
+                            </div>
+                            <h3>Land Cover</h3>
+                            <p class="format-info">Formats: .TIF, .TIFF</p>
+                            <input type="file" id="lc-file" accept=".tif,.tiff" hidden>
+                            <button class="primary-btn" onclick="document.getElementById('lc-file').click()">
+                                <i class="fas fa-upload"></i> Pujar
+                            </button>
+                            <div class="file-list" id="lc-files-list"></div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Tab: Met Data QC -->
-            <section id="tab-met-qc" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-filter"></i> Met Data Quality Control</h1>
-                    <p class="subtitle">Filter and clean meteorological data</p>
-                </div>
-                <div class="card glass">
-                    <div class="card-header">
-                        <h2>QC Filters</h2>
-                    </div>
-                    <div class="card-body">
+                <!-- MET QC TAB -->
+                <section id="tab-met-qc" class="tab-content">
+                    <h2><i class="fas fa-filter"></i> Filtratge de Dades Met</h2>
+                    
+                    <div class="qc-panel glass">
+                        <h3>Filtres disponibles</h3>
                         <div class="filter-options">
                             <label class="toggle-option">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="filter-tower" checked>
                                 <span class="toggle-slider"></span>
-                                <span class="toggle-label">Tower Shadow</span>
+                                <span class="toggle-label">Ombra de Torre</span>
                             </label>
                             <label class="toggle-option">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="filter-ice" checked>
                                 <span class="toggle-slider"></span>
-                                <span class="toggle-label">Ice Detection</span>
+                                <span class="toggle-label">Detecció de Gel</span>
                             </label>
                             <label class="toggle-option">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="filter-std" checked>
                                 <span class="toggle-slider"></span>
-                                <span class="toggle-label">Std Filter</span>
+                                <span class="toggle-label">Filtre STD</span>
                             </label>
                         </div>
-                        <button class="primary-btn" onclick="runMetQC()">
-                            <i class="fas fa-play"></i> Run QC Filters
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Reanalysis (MERRA) -->
-            <section id="tab-merra" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-cloud"></i> Reanalysis Data</h1>
-                    <p class="subtitle">Download and process MERRA/ERA5 data</p>
-                </div>
-                <div class="card glass">
-                    <div class="card-header">
-                        <h2><i class="fas fa-download"></i> Download Reanalysis</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="data-sources">
-                            <button class="source-btn" onclick="downloadReanalysis('merra')">
-                                <i class="fas fa-cloud-download-alt"></i>
-                                <span>MERRA-2</span>
-                            </button>
-                            <button class="source-btn" onclick="downloadReanalysis('era5')">
-                                <i class="fas fa-globe-europe"></i>
-                                <span>ERA5</span>
+                        
+                        <div class="action-row">
+                            <button class="primary-btn large" onclick="runMetQC()">
+                                <i class="fas fa-play"></i> Executar Filtratge
                             </button>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: MCP -->
-            <section id="tab-mcp" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-project-diagram"></i> Measure-Correlate-Predict</h1>
-                    <p class="subtitle">Long-term estimation using reference data</p>
-                </div>
-                <div class="card glass">
-                    <div class="card-header">
-                        <h2>MCP Configuration</h2>
-                    </div>
-                    <div class="card-body">
-                        <select id="mcp-method">
-                            <option value="orthogonal">Orthogonal Regression</option>
-                            <option value="bins">Method of Bins</option>
-                            <option value="matrix">Matrix-LastWS</option>
-                        </select>
-                        <button class="primary-btn" onclick="runMCP()">
-                            <i class="fas fa-play"></i> Run MCP
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Summary -->
-            <section id="tab-summary" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-list"></i> Met & Turbine Summary</h1>
-                    <p class="subtitle">Overview of all data</p>
-                </div>
-                <div class="card glass">
-                    <div class="card-body">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Data Count</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="summary-table">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Gross/Power -->
-            <section id="tab-gross" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-bolt"></i> Gross Power Estimation</h1>
-                    <p class="subtitle">Calculate gross energy production</p>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card glass">
-                        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
-                        <div class="stat-content">
-                            <h3>Total Capacity</h3>
-                            <p class="stat-value">--<span class="unit">MW</span></p>
+                        
+                        <div class="results-panel" id="qc-results">
+                            <p class="placeholder">Els resultats apareixeran aquí</p>
                         </div>
                     </div>
-                    <div class="stat-card glass">
-                        <div class="stat-icon"><i class="fas fa-energy"></i></div>
-                        <div class="stat-content">
-                            <h3>Gross AEP</h3>
-                            <p class="stat-value">--<span class="unit">GWh</span></p>
+                </section>
+
+                <!-- WAKE TAB -->
+                <section id="tab-wake" class="tab-content">
+                    <h2><i class="fas fa-wind"></i> Modelat de Wake</h2>
+                    
+                    <div class="wake-panel glass">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Model</label>
+                                <select id="wake-model">
+                                    <option value="jensen">Jensen</option>
+                                    <option value="larsen">Larsen</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Resolució Grid (m)</label>
+                                <input type="number" id="wake-resolution" value="50">
+                            </div>
+                        </div>
+                        
+                        <div class="action-row">
+                            <button class="primary-btn large" onclick="runWakeCalculation()">
+                                <i class="fas fa-calculator"></i> Calcular Pèrdues
+                            </button>
+                        </div>
+                        
+                        <div class="results-panel" id="wake-results">
+                            <p class="placeholder">Els resultats apareixeran aquí</p>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Tab: Exceedance -->
-            <section id="tab-exceedance" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-chart-line"></i> Exceedance Analysis</h1>
-                    <p class="subtitle">Probability of exceedance curves</p>
-                </div>
-                <div class="card glass">
-                    <div class="chart-container">
-                        <canvas id="exceedanceChart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Net Estimates -->
-            <section id="tab-net-estimates" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-calculator"></i> Net Estimates</h1>
-                    <p class="subtitle">Net energy after all losses</p>
-                </div>
-                <div class="losses-panel glass">
-                    <h3>Loss Factors</h3>
-                    <div class="loss-item">
-                        <span>Wake Losses</span>
-                        <span class="loss-value" id="wake-loss">--%</span>
-                    </div>
-                    <div class="loss-item">
-                        <span>Availability</span>
-                        <span class="loss-value">3%</span>
-                    </div>
-                    <div class="loss-item">
-                        <span>Electrical</span>
-                        <span class="loss-value">2%</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Site Conditions -->
-            <section id="tab-site-conditions" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-globe"></i> Site Conditions</h1>
-                    <p class="subtitle">Terrain and roughness analysis</p>
-                </div>
-            </section>
-
-            <!-- Tab: Monthly -->
-            <section id="tab-monthly" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-calendar-alt"></i> Monthly Analysis</h1>
-                    <p class="subtitle">Monthly energy distribution</p>
-                </div>
-            </section>
-
-            <!-- Tab: Maps -->
-            <section id="tab-maps" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-map"></i> Maps</h1>
-                    <p class="subtitle">Wind resource maps</p>
-                </div>
-                <div class="card glass">
-                    <div class="map-container">
-                        <div id="windMap" class="map-placeholder">
-                            <i class="fas fa-map-marked-alt fa-3x"></i>
-                            <p>Wind Resource Map</p>
+                <!-- MCP TAB -->
+                <section id="tab-mcp" class="tab-content">
+                    <h2><i class="fas fa-project-diagram"></i> Measure-Correlate-Predict</h2>
+                    
+                    <div class="mcp-panel glass">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Mètode</label>
+                                <select id="mcp-method">
+                                    <option value="orthogonal">Regressió Ortogonal</option>
+                                    <option value="bins">Mètode de Bins</option>
+                                    <option value="matrix">Matrix-LastWS</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Sectors</label>
+                                <input type="number" id="mcp-sectors" value="12">
+                            </div>
+                        </div>
+                        
+                        <div class="action-row">
+                            <button class="primary-btn large" onclick="runMCPCalculation()">
+                                <i class="fas fa-calculator"></i> Executar MCP
+                            </button>
+                        </div>
+                        
+                        <div class="results-panel" id="mcp-results">
+                            <p class="placeholder">Els resultats apareixeran aquí</p>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Tab: Suitability -->
-            <section id="tab-suitability" class="tab-content">
-                <div class="page-header">
-                    <h1><i class="fas fa-check-circle"></i> Site Suitability</h1>
-                    <p class="subtitle">Suitable areas for wind development</p>
+                <!-- LAYOUT TAB -->
+                <section id="tab-layout" class="tab-content">
+                    <h2><i class="fas fa-th"></i> Disseny de Layout</h2>
+                    
+                    <div class="layout-panel glass">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Files</label>
+                                <input type="number" id="layout-rows" value="4">
+                            </div>
+                            <div class="input-group">
+                                <label>Columnes</label>
+                                <input type="number" id="layout-cols" value="5">
+                            </div>
+                            <div class="input-group">
+                                <label>Espaiat X (m)</label>
+                                <input type="number" id="layout-spacing-x" value="800">
+                            </div>
+                            <div class="input-group">
+                                <label>Espaiat Y (m)</label>
+                                <input type="number" id="layout-spacing-y" value="600">
+                            </div>
+                        </div>
+                        
+                        <div class="action-row">
+                            <button class="primary-btn" onclick="createGridLayout()">
+                                <i class="fas fa-th"></i> Grid
+                            </button>
+                            <button class="secondary-btn" onclick="createStaggeredLayout()">
+                                <i class="fas fa-th-large"></i> Staggered
+                            </button>
+                            <button class="accent-btn" onclick="optimizeLayout()">
+                                <i class="fas fa-magic"></i> Optimitzar GA
+                            </button>
+                        </div>
+                        
+                        <div class="canvas-container">
+                            <canvas id="layoutCanvas" width="800" height="500"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RESULTS TAB -->
+                <section id="tab-results" class="tab-content">
+                    <h2><i class="fas fa-chart-bar"></i> Resultats</h2>
+                    
+                    <div class="results-grid">
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                            <div class="stat-content">
+                                <h3>Capacitat Total</h3>
+                                <p class="stat-value" id="stat-capacity">--<span class="unit">MW</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fas fa-energy"></i></div>
+                            <div class="stat-content">
+                                <h3>AEP Brut</h3>
+                                <p class="stat-value" id="stat-aep">--<span class="unit">GWh/any</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fas fa-wind"></i></div>
+                            <div class="stat-content">
+                                <h3>Pèrdues Wake</h3>
+                                <p class="stat-value" id="stat-wake">--<span class="unit">%</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card glass">
+                            <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            <div class="stat-content">
+                                <h3>Disponibilitat</h3>
+                                <p class="stat-value">97<span class="unit">%</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: New Project -->
+    <div id="modal-new-project" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus"></i> Nou Projecte</h2>
+                <button class="modal-close" onclick="closeNewProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Nom del projecte *</label>
+                    <input type="text" id="new-project-name" placeholder="Ex: Parc Eòlic Barcelona">
                 </div>
-            </section>
-        </main>
+                <div class="input-group">
+                    <label>Descripció</label>
+                    <textarea id="new-project-desc" placeholder="Descripció del projecte..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Autor</label>
+                    <input type="text" id="new-project-author" placeholder="El teu nom">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="closeNewProjectModal()">Cancel·lar</button>
+                <button class="primary-btn" onclick="createNewProject()">
+                    <i class="fas fa-plus"></i> Crear Projecte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Open Project -->
+    <div id="modal-open-project" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2><i class="fas fa-folder-open"></i> Obrir Projecte</h2>
+                <button class="modal-close" onclick="closeOpenProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="project-list" id="all-projects-list">
+                    <p class="placeholder">Carregant projectes...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notifications -->
@@ -474,11 +443,10 @@
     <div id="loading-overlay" class="hidden">
         <div class="loader">
             <div class="loader-ring"></div>
-            <p>Processing...</p>
+            <p>Processant...</p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

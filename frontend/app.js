@@ -1,39 +1,49 @@
 /**
- * Continuum Web - Full Working JavaScript
- * Handles project creation, file upload, and data processing
+ * Continuum Web - Main Application
+ * Clean, intuitive wind resource toolkit
  */
 
 const API_BASE = 'http://localhost:8000';
 let currentProject = null;
-let projectFiles = {};
 
-// Navigation
-document.querySelectorAll('.sidebar-nav li').forEach(li => {
-    li.addEventListener('click', () => {
-        const tab = li.dataset.tab;
-        showTab(tab);
-    });
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadRecentProjects();
 });
 
-document.querySelectorAll('.nav-menu .dropdown > a').forEach(a => {
-    a.addEventListener('click', (e) => {
-        e.preventDefault();
-    });
-});
+// ==================== PROJECT MANAGEMENT ====================
 
-function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.sidebar-nav li').forEach(l => l.classList.remove('active'));
-    
-    document.getElementById(`tab-${tabId}`).classList.add('active');
-    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+function showNewProjectModal() {
+    document.getElementById('modal-new-project').classList.remove('hidden');
+    document.getElementById('new-project-name').focus();
 }
 
-// Projects
-async function newProject() {
-    const name = document.getElementById('project-name').value || document.getElementById('project-name').placeholder;
-    const description = document.getElementById('project-description').value || "";
-    const author = document.getElementById('project-author').value || "";
+function closeNewProjectModal() {
+    document.getElementById('modal-new-project').classList.add('hidden');
+    // Clear form
+    document.getElementById('new-project-name').value = '';
+    document.getElementById('new-project-desc').value = '';
+    document.getElementById('new-project-author').value = '';
+}
+
+function openProject() {
+    loadAllProjects();
+    document.getElementById('modal-open-project').classList.remove('hidden');
+}
+
+function closeOpenProjectModal() {
+    document.getElementById('modal-open-project').classList.add('hidden');
+}
+
+async function createNewProject() {
+    const name = document.getElementById('new-project-name').value.trim();
+    const description = document.getElementById('new-project-desc').value.trim();
+    const author = document.getElementById('new-project-author').value.trim();
+    
+    if (!name) {
+        showToast('El nom del projecte és obligatori', 'error');
+        return;
+    }
     
     try {
         const response = await fetch(`${API_BASE}/projects/create`, {
@@ -46,63 +56,197 @@ async function newProject() {
         
         if (data.success) {
             currentProject = name;
-            showToast('Project created!', 'success');
-            loadProjectsList();
+            closeNewProjectModal();
+            showDashboard(name, description, author);
+            showToast(`Projecte "${name}" creat!`, 'success');
+            saveToStorage('lastProject', name);
         } else {
-            showToast(data.message, 'error');
+            showToast(data.message || 'Error creant projecte', 'error');
         }
     } catch (e) {
-        showToast('Error creating project: ' + e.message, 'error');
+        showToast('Error de connexió: ' + e.message, 'error');
     }
 }
 
-async function loadProjectsList() {
+function showDashboard(name, description, author) {
+    document.getElementById('welcome-screen').classList.add('hidden');
+    document.getElementById('project-dashboard').classList.remove('hidden');
+    
+    document.getElementById('dashboard-project-name').textContent = name;
+    document.getElementById('dashboard-project-desc').textContent = description || 'Sense descripció';
+    document.getElementById('current-project-name').textContent = name;
+    document.getElementById('current-project-name').parentElement.title = name;
+    
+    // Load project files
+    loadProjectFiles(name);
+}
+
+async function loadAllProjects() {
     try {
         const response = await fetch(`${API_BASE}/projects/list`);
         const projects = await response.json();
         
-        console.log('Projects:', projects);
+        const listEl = document.getElementById('all-projects-list');
+        
+        if (projects.length === 0) {
+            listEl.innerHTML = '<p class="placeholder">No hi ha projectes</p>';
+            return;
+        }
+        
+        listEl.innerHTML = projects.map(p => `
+            <div class="project-item" onclick="loadProject('${p.name}')">
+                <div class="project-item-info">
+                    <strong>${p.name}</strong>
+                    <span>${p.description || 'Sense descripció'}</span>
+                </div>
+                <div class="project-item-date">
+                    ${new Date(p.updated_at).toLocaleDateString('ca')}
+                </div>
+            </div>
+        `).join('');
+        
     } catch (e) {
-        console.error('Error loading projects:', e);
+        showToast('Error carregant projectes', 'error');
+    }
+}
+
+async function loadProject(name) {
+    closeOpenProjectModal();
+    
+    try {
+        const response = await fetch(`${API_BASE}/projects/${encodeURIComponent(name)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentProject = name;
+            showDashboard(data.project.name, data.project.description, data.project.author);
+            showToast(`Obert: ${name}`, 'success');
+            saveToStorage('lastProject', name);
+        } else {
+            showToast('Projecte no trobat', 'error');
+        }
+    } catch (e) {
+        showToast('Error obrint projecte', 'error');
     }
 }
 
 async function saveProject() {
     if (!currentProject) {
-        showToast('No project selected', 'error');
+        showToast('No hi cap projecte obert', 'error');
         return;
     }
     
-    // Project auto-saves on each file upload
-    showToast('Project saved!', 'success');
+    showToast('Projecte guardat!', 'success');
 }
 
-async function openProject() {
-    const name = prompt('Enter project name:');
-    if (name) {
-        currentProject = name;
-        await loadProjectFiles(name);
-        showToast(`Opened: ${name}`, 'success');
+function closeProject() {
+    currentProject = null;
+    document.getElementById('project-dashboard').classList.add('hidden');
+    document.getElementById('welcome-screen').classList.remove('hidden');
+    loadRecentProjects();
+    saveToStorage('lastProject', null);
+}
+
+// ==================== FILE UPLOAD ====================
+
+async function loadProjectFiles(projectName) {
+    try {
+        const response = await fetch(`${API_BASE}/files/list?project=${encodeURIComponent(projectName)}`);
+        const data = await response.json();
+        
+        // Update file lists
+        const files = data.files || [];
+        const byType = {
+            met: [],
+            turbines: [],
+            topography: [],
+            landcover: []
+        };
+        
+        files.forEach(f => {
+            if (byType[f.type]) byType[f.type].push(f);
+        });
+        
+        updateFileList('met-files-list', byType.met);
+        updateFileList('turbine-files-list', byType.turbines);
+        updateFileList('topo-files-list', byType.topography);
+        updateFileList('lc-files-list', byType.landcover);
+        
+    } catch (e) {
+        console.error('Error loading files:', e);
     }
 }
 
-// File Uploads
-async function uploadFile(fileInput, fileType) {
-    if (!currentProject) {
-        showToast('Please create or select a project first', 'error');
+function updateFileList(elementId, files) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    if (files.length === 0) {
+        el.innerHTML = '';
         return;
     }
     
-    const files = fileInput.files;
-    if (files.length === 0) return;
+    el.innerHTML = files.map(f => `
+        <div class="file-item">
+            <i class="fas fa-file"></i>
+            <span>${f.filename}</span>
+        </div>
+    `).join('');
+}
+
+// Setup file upload handlers
+document.addEventListener('DOMContentLoaded', () => {
+    // Met files
+    document.getElementById('met-file')?.addEventListener('change', async (e) => {
+        if (!currentProject) {
+            showToast('Obre o crea un projecte primer', 'error');
+            e.target.value = '';
+            return;
+        }
+        await uploadFiles(e.target.files, 'met');
+    });
+    
+    // Turbine files
+    document.getElementById('turbine-file')?.addEventListener('change', async (e) => {
+        if (!currentProject) {
+            showToast('Obre o crea un projecte primer', 'error');
+            e.target.value = '';
+            return;
+        }
+        await uploadFiles(e.target.files, 'turbines');
+    });
+    
+    // Topography files
+    document.getElementById('topo-file')?.addEventListener('change', async (e) => {
+        if (!currentProject) {
+            showToast('Obre o crea un projecte primer', 'error');
+            e.target.value = '';
+            return;
+        }
+        await uploadFiles([e.target.files[0]], 'topography');
+    });
+    
+    // Land cover files
+    document.getElementById('lc-file')?.addEventListener('change', async (e) => {
+        if (!currentProject) {
+            showToast('Obre o crea un projecte primer', 'error');
+            e.target.value = '';
+            return;
+        }
+        await uploadFiles([e.target.files[0]], 'landcover');
+    });
+});
+
+async function uploadFiles(files, fileType) {
+    if (!files.length) return;
     
     for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('project', currentProject);
-        formData.append('file_type', fileType);
-        
         try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('project', currentProject);
+            formData.append('file_type', fileType);
+            
             const response = await fetch(`${API_BASE}/files/upload`, {
                 method: 'POST',
                 body: formData
@@ -111,128 +255,84 @@ async function uploadFile(fileInput, fileType) {
             const data = await response.json();
             
             if (data.success) {
-                showToast(`Uploaded: ${file.name}`, 'success');
-                await loadProjectFiles(currentProject);
+                showToast(`Pujat: ${file.name}`, 'success');
+                loadProjectFiles(currentProject);
             } else {
-                showToast(data.error || 'Upload failed', 'error');
+                showToast(`Error: ${data.error || file.name}`, 'error');
             }
         } catch (e) {
-            showToast('Upload error: ' + e.message, 'error');
+            showToast(`Error pujant ${file.name}`, 'error');
         }
     }
 }
 
-async function loadProjectFiles(projectName) {
-    try {
-        const response = await fetch(`${API_BASE}/files/list?project=${encodeURIComponent(projectName)}`);
-        const data = await response.json();
-        projectFiles[projectName] = data.files || [];
-        
-        console.log('Files loaded:', projectFiles);
-    } catch (e) {
-        console.error('Error loading files:', e);
-    }
+// ==================== TABS NAVIGATION ====================
+
+function switchTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    // Show selected tab
+    document.getElementById(`tab-${tabId}`)?.classList.add('active');
 }
 
-// Event listeners for file inputs
-document.getElementById('met-file')?.addEventListener('change', () => uploadFile(document.getElementById('met-file'), 'met'));
-document.getElementById('turbine-file')?.addEventListener('change', () => uploadFile(document.getElementById('turbine-file'), 'turbines'));
-document.getElementById('topo-file')?.addEventListener('change', () => uploadFile(document.getElementById('topo-file'), 'topography'));
-document.getElementById('lc-file')?.addEventListener('change', () => uploadFile(document.getElementById('lc-file'), 'landcover'));
-
-// Processing functions
-async function importMetData() {
-    await uploadFile(document.getElementById('met-file'), 'met');
-}
-
-async function importTurbines() {
-    await uploadFile(document.getElementById('turbine-file'), 'turbines');
-}
-
-async function importTopography() {
-    await uploadFile(document.getElementById('topo-file'), 'topography');
-}
-
-async function importLandCover() {
-    await uploadFile(document.getElementById('lc-file'), 'landcover');
-}
+// ==================== MET QC ====================
 
 async function runMetQC() {
     if (!currentProject) {
-        showToast('Create a project first', 'error');
+        showToast('Obre un projecte primer', 'error');
         return;
     }
     
     showLoading(true);
     
     try {
-        // Call the filter API
         const response = await fetch(`${API_BASE}/met-filter/filter`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                data: [],
-                remove_tower_shadow: true,
-                remove_ice: true,
-                remove_high_std: true
+                timestamps: ['2026-01-01T00:00:00', '2026-01-01T01:00:00'],
+                wind_speed: [5.2, 5.8],
+                wind_direction: [180, 185],
+                remove_tower_shadow: document.getElementById('filter-tower').checked,
+                remove_ice: document.getElementById('filter-ice').checked,
+                remove_high_std: document.getElementById('filter-std').checked
             })
         });
         
-        const result = await response.json();
+        const data = await response.json();
         
-        // Save result to project
-        await fetch(`${API_BASE}/files/upload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                project: currentProject,
-                filename: 'met_qc_results.json',
-                type: 'results',
-                data: result
-            })
-        });
+        const resultsEl = document.getElementById('qc-results');
+        resultsEl.innerHTML = `
+            <div class="result-row">
+                <span>Dades originals:</span>
+                <strong>${data.original_count}</strong>
+            </div>
+            <div class="result-row">
+                <span>Dades filtrades:</span>
+                <strong>${data.filtered_count}</strong>
+            </div>
+            <div class="result-row">
+                <span>Dades eliminades:</span>
+                <strong>${data.removed_count} (${data.removal_percent.toFixed(1)}%)</strong>
+            </div>
+            <div class="result-row">
+                <span>Shear Alpha:</span>
+                <strong>${data.shear_alpha}</strong>
+            </div>
+        `;
         
-        showToast('QC completed!', 'success');
+        showToast('Filtratge complet!', 'success');
+        
     } catch (e) {
-        showToast('QC error: ' + e.message, 'error');
+        showToast('Error al filtratge: ' + e.message, 'error');
     } finally {
         showLoading(false);
     }
 }
 
-async function runMCP() {
-    if (!currentProject) {
-        showToast('Create a project first', 'error');
-        return;
-    }
-    
-    showLoading(true);
-    
-    try {
-        const method = document.getElementById('mcp-method')?.value || 'orthogonal';
-        
-        const response = await fetch(`${API_BASE}/mcp/analyze`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                reference_data: [],
-                target_data: [],
-                method: method,
-                sectors: 12
-            })
-        });
-        
-        const result = await response.json();
-        
-        showToast('MCP completed!', 'success');
-    } catch (e) {
-        showToast('MCP error: ' + e.message, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
+// ==================== WAKE ====================
 
-async function runWake() {
+async function runWakeCalculation() {
     showLoading(true);
     
     try {
@@ -240,72 +340,114 @@ async function runWake() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                turbines: [],
-                grid_resolution: 50,
-                sectors: 12
+                turbines: [
+                    { name: 'T1', x: 0, y: 0, hub_height: 80, rotor_diameter: 120, ct: 0.8 },
+                    { name: 'T2', x: 800, y: 0, hub_height: 80, rotor_diameter: 120, ct: 0.8 },
+                    { name: 'T3', x: 1600, y: 0, hub_height: 80, rotor_diameter: 120, ct: 0.8 }
+                ],
+                grid_resolution: parseInt(document.getElementById('wake-resolution').value) || 50
             })
         });
         
-        const result = await response.json();
-        showToast('Wake calculation completed!', 'success');
+        const data = await response.json();
+        
+        const resultsEl = document.getElementById('wake-results');
+        resultsEl.innerHTML = `
+            <div class="result-row">
+                <span>Pèrdua Global Wake:</span>
+                <strong>${data.global_wake_loss_percent?.toFixed(2) || '--'}%</strong>
+            </div>
+            <div class="result-row">
+                <span>Núm. Turbines:</span>
+                <strong>${data.n_turbines}</strong>
+            </div>
+        `;
+        
+        showToast('Càlcul de wake complet!', 'success');
+        
     } catch (e) {
-        showToast('Wake error: ' + e.message, 'error');
+        showToast('Error al càlcul de wake: ' + e.message, 'error');
     } finally {
         showLoading(false);
     }
 }
 
-// Layout functions
-async function createGridLayout() {
-    const response = await fetch(`${API_BASE}/layout/grid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            n_rows: 4,
-            n_cols: 5,
-            spacing_x: 800,
-            spacing_y: 600,
-            staggered: false
-        })
-    });
+// ==================== MCP ====================
+
+async function runMCPCalculation() {
+    showLoading(true);
     
-    const result = await response.json();
-    drawLayout(result.turbines);
+    try {
+        const response = await fetch(`${API_BASE}/mcp/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reference_data: [],
+                target_data: [],
+                method: document.getElementById('mcp-method').value,
+                sectors: parseInt(document.getElementById('mcp-sectors').value) || 12
+            })
+        });
+        
+        const data = await response.json();
+        
+        const resultsEl = document.getElementById('mcp-results');
+        resultsEl.innerHTML = `
+            <div class="result-row">
+                <span>Mètode:</span>
+                <strong>${data.method || 'orthogonal'}</strong>
+            </div>
+            <div class="result-row">
+                <span>Sectors:</span>
+                <strong>${data.n_sectors || 12}</strong>
+            </div>
+            <div class="result-row">
+                <span>Correlació:</span>
+                <strong>${data.correlation || '--'}</strong>
+            </div>
+        `;
+        
+        showToast('MCP complet!', 'success');
+        
+    } catch (e) {
+        showToast('Error a MCP: ' + e.message, 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
-async function createStaggeredLayout() {
-    const response = await fetch(`${API_BASE}/layout/grid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            n_rows: 4,
-            n_cols: 5,
-            spacing_x: 700,
-            spacing_y: 500,
-            staggered: true
-        })
-    });
+// ==================== LAYOUT ====================
+
+function createGridLayout() {
+    const rows = parseInt(document.getElementById('layout-rows').value) || 4;
+    const cols = parseInt(document.getElementById('layout-cols').value) || 5;
+    const spacingX = parseInt(document.getElementById('layout-spacing-x').value) || 800;
+    const spacingY = parseInt(document.getElementById('layout-spacing-y').value) || 600;
     
-    const result = await response.json();
-    drawLayout(result.turbines);
+    drawLayout(createGrid(rows, cols, spacingX, spacingY, false));
+    showToast('Layout Grid creat!', 'success');
 }
 
-async function optimizeLayout() {
-    const response = await fetch(`${API_BASE}/layout/optimize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            n_turbines: 20,
-            min_x: 0,
-            max_x: 4000,
-            min_y: 0,
-            max_y: 3000,
-            method: 'ga'
-        })
-    });
+function createStaggeredLayout() {
+    const rows = parseInt(document.getElementById('layout-rows').value) || 4;
+    const cols = parseInt(document.getElementById('layout-cols').value) || 5;
+    const spacingX = parseInt(document.getElementById('layout-spacing-x').value) || 700;
+    const spacingY = parseInt(document.getElementById('layout-spacing-y').value) || 500;
     
-    const result = await response.json();
-    drawLayout(result.turbines);
+    drawLayout(createGrid(rows, cols, spacingX, spacingY, true));
+    showToast('Layout Staggered creat!', 'success');
+}
+
+function createGrid(rows, cols, spacingX, spacingY, staggered) {
+    const turbines = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const x = c * spacingX + (staggered && r % 2 === 1 ? spacingX / 2 : 0);
+            const y = r * spacingY;
+            turbines.push({ name: `T${r * cols + c + 1}`, x, y });
+        }
+    }
+    return turbines;
 }
 
 function drawLayout(turbines) {
@@ -320,63 +462,124 @@ function drawLayout(turbines) {
     ctx.lineWidth = 1;
     
     turbines.forEach((t, i) => {
-        const x = (t.x / 4000) * canvas.width;
-        const y = canvas.height - (t.y / 3000) * canvas.height;
+        // Scale to fit
+        const maxX = 4500;
+        const maxY = 3000;
+        const x = (t.x / maxX) * canvas.width + 20;
+        const y = canvas.height - (t.y / maxY) * canvas.height - 20;
         
+        // Draw turbine
         ctx.fillStyle = '#0ea5e9';
         ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px sans-serif';
+        // Label
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(t.name || `T${i+1}`, x, y + 25);
+        ctx.fillText(t.name, x, y + 25);
     });
+    
+    // Draw scale
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(20, canvas.height - 20, 100, 2);
+    ctx.fillText('~1km', 70, canvas.height - 8);
 }
 
-// Toast notifications
+async function optimizeLayout() {
+    showLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE}/layout/optimize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                n_turbines: 20,
+                min_x: 0, max_x: 4000,
+                min_y: 0, max_y: 3000,
+                method: 'ga'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.turbines) {
+            drawLayout(data.turbines);
+            showToast('Optimització GA completada!', 'success');
+        }
+        
+    } catch (e) {
+        showToast('Error a optimització: ' + e.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ==================== UTILITIES ====================
+
+function showLoading(show) {
+    const overlay = document.getElementById('loading-overlay');
+    if (show) overlay.classList.remove('hidden');
+    else overlay.classList.add('hidden');
+}
+
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
     container.appendChild(toast);
     
-    setTimeout(() => {
-        toast.remove();
-    }, 4000);
+    setTimeout(() => toast.remove(), 4000);
 }
 
-// Loading overlay
-function showLoading(show) {
-    const overlay = document.getElementById('loading-overlay');
-    if (show) {
-        overlay.classList.remove('hidden');
-    } else {
-        overlay.classList.add('hidden');
+function saveToStorage(key, value) {
+    try {
+        if (value) localStorage.setItem(key, value);
+        else localStorage.removeItem(key);
+    } catch (e) {}
+}
+
+async function loadRecentProjects() {
+    const last = localStorage.getItem('lastProject');
+    if (last) {
+        const recentEl = document.getElementById('recent-list');
+        recentEl.innerHTML = `
+            <div class="project-item" onclick="loadProject('${last}')">
+                <i class="fas fa-history"></i>
+                <span>${last}</span>
+            </div>
+        `;
     }
 }
 
-// Initialize
+async function downloadReanalysis() {
+    showToast('Funcionalitat de descàrrega vindrà aviat!', 'info');
+}
+
+// Enter key handlers
 document.addEventListener('DOMContentLoaded', () => {
-    loadProjectsList();
-    
-    // Create demo project if none exists
-    fetch(`${API_BASE}/projects/list`)
-        .then(r => r.json())
-        .then(projects => {
-            if (projects.length === 0) {
-                // Create demo project
-                fetch(`${API_BASE}/projects/create`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: 'Demo Project',
-                        description: 'Demo wind project',
-                        author: 'System'
-                    })
-                });
-            }
-        });
+    document.getElementById('new-project-name')?.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') createNewProject();
+    });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl+S = Save
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        saveProject();
+    }
+    // Ctrl+N = New Project
+    if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        showNewProjectModal();
+    }
+    // Ctrl+O = Open Project
+    if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        openProject();
+    }
 });
