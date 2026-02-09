@@ -31,7 +31,6 @@ class TurbineWake:
     ct: float  # coeficient d'empenta
     velocity_deficit_initial: float = 0.0
     
-    @property
     def wake_radius_at_downwind(self, distance: float) -> float:
         """
         Calcula el radi del wake a una distància downstream

@@ -1,0 +1,24 @@
+{
+  "name": "Demo Project",
+  "description": "Testing",
+  "author": "Oriol",
+  "created_at": "2026-02-09T09:23:26.777754",
+  "updated_at": "2026-02-09T09:23:53.895004",
+  "version": "2.1.0",
+  "status": "active",
+  "files": {
+    "met": [
+      {
+        "filename": "test_met.csv",
+        "path": "projects/Demo_Project/data/met/test_met.csv",
+        "type": "met",
+        "uploaded_at": "2026-02-09T09:23:53.894997"
+      }
+    ],
+    "turbines": [],
+    "topography": [],
+    "landcover": [],
+    "results": []
+  },
+  "config": {}
+}
