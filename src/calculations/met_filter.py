@@ -205,21 +205,28 @@ def filter_met_data(
     df_filtered = df.copy()
     
     # Filtres
-    if remove_tower_shadow:
+    if remove_tower_shadow and 'wind_direction' in df.columns:
         df_filtered = filter_obj.filter_tower_shadow(df_filtered)
     
-    if remove_ice:
+    if remove_ice and 'temperature' in df.columns:
         df_filtered = filter_obj.filter_ice(df_filtered)
+    elif remove_ice and 'temperature' not in df.columns:
+        # Skip ice filter if no temperature data
+        pass
     
-    if remove_high_std:
+    if remove_high_std and 'wind_speed' in df.columns:
         df_filtered = filter_obj.filter_std(df_filtered)
     
     # Calcular shear
-    alpha, df_final = filter_obj.calculate_shear(
-        df_filtered,
-        ref_height=ref_height,
-        target_height=target_height
-    )
+    if 'wind_speed' in df.columns:
+        alpha, df_final = filter_obj.calculate_shear(
+            df_filtered,
+            ref_height=ref_height,
+            target_height=target_height
+        )
+    else:
+        alpha = 0.15
+        df_final = df_filtered
     
     return {
         'filtered_data': df_final,
