@@ -6,7 +6,7 @@ Endpoints per a filtratge de dades meteorològiques
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any, Union
 import pandas as pd
 import io
 
@@ -18,7 +18,14 @@ router = APIRouter(prefix="/met-filter", tags=["Met Data Filtering"])
 
 class FilterRequest(BaseModel):
     """Request per filtratge de dades"""
-    data: list[dict]  # Dades en format JSON
+    # Format: list of dicts (row-based)
+    data: Optional[List[Dict[str, Any]]] = None
+    # Format: columns (column-based) - alternative input
+    timestamps: Optional[List[str]] = None
+    wind_speed: Optional[List[float]] = None
+    wind_direction: Optional[List[float]] = None
+    temperature: Optional[List[float]] = None
+    # Options
     remove_tower_shadow: bool = True
     remove_ice: bool = True
     remove_high_std: bool = True
@@ -28,12 +35,39 @@ class FilterRequest(BaseModel):
 
 class FilterResponse(BaseModel):
     """Response del filtratge"""
-    filtered_data: list[dict]
+    filtered_data: List[Dict[str, Any]]
     shear_alpha: float
     original_count: int
     filtered_count: int
     removed_count: int
     removal_percent: float
+
+
+def build_dataframe(request: FilterRequest) -> pd.DataFrame:
+    """Construeix DataFrame des de diferents formats d'entrada"""
+    
+    # Format 1: list of dicts
+    if request.data is not None:
+        return pd.DataFrame(request.data)
+    
+    # Format 2: column-based
+    data = {}
+    if request.timestamps is not None:
+        data['timestamp'] = request.timestamps
+    if request.wind_speed is not None:
+        data['wind_speed'] = request.wind_speed
+    if request.wind_direction is not None:
+        data['wind_direction'] = request.wind_direction
+    if request.temperature is not None:
+        data['temperature'] = request.temperature
+    
+    if not data:
+        raise HTTPException(
+            status_code=400,
+            detail="No s'han proporcionat dades. Usa 'data' o columnes individuals."
+        )
+    
+    return pd.DataFrame(data)
 
 
 @router.post("/filter", response_model=FilterResponse)
@@ -47,8 +81,8 @@ async def filter_met_endpoint(request: FilterRequest):
     - target_height: Alçada objectiu per extrapolació
     """
     try:
-        # Convertir a DataFrame
-        df = pd.DataFrame(request.data)
+        # Construeix DataFrame des de qualsevol format
+        df = build_dataframe(request)
         
         # Verificar columnes requerides
         required_cols = ['wind_speed', 'wind_direction']

@@ -1,0 +1,24 @@
+{
+  "name": "Test Project",
+  "description": "Demo project",
+  "author": "System",
+  "created_at": "2026-02-08T22:44:18.469084",
+  "updated_at": "2026-02-08T22:44:23.391921",
+  "version": "2.1.0",
+  "status": "active",
+  "files": {
+    "met": [],
+    "turbines": [
+      {
+        "filename": "test_turbines.csv",
+        "path": "projects/Test_Project/data/turbines/test_turbines.csv",
+        "type": "turbines",
+        "uploaded_at": "2026-02-08T22:44:23.391914"
+      }
+    ],
+    "topography": [],
+    "landcover": [],
+    "results": []
+  },
+  "config": {}
+}
