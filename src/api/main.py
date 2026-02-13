@@ -1,24 +1,27 @@
 """
-Continuum Web API - Working Version
-Full implementation with all features
+Continuum Web API - Main Entry Point
+Port del toolkit eòlic Continuum (C#) a Python/FastAPI
+
+Funcionalitats:
+- Met Data Filtering
+- MCP (Measure-Correlate-Predict)
+- Wake Loss Modeling
+- Layout Design & Optimization
+- Neural MCP (ML-based)
+- WRF Data Processing
+- Wind Reports
+- Turbine Library
+- Project Management
 """
 
-import os
-from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from src.api.routers import met_filter, mcp, wake, layout, projects, files
-
-# Get the project root directory
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-FRONTEND_DIR = PROJECT_ROOT / "frontend"
+from src.api.routers import met_filter, mcp, wake, layout, neural_mcp, wrf, reports, turbines
 
 app = FastAPI(
     title="Continuum Web API",
-    description="Wind Resource Toolkit - Full Implementation",
-    version="2.1.0"
+    description="Toolkit eòlic per anàlisi de recursos wind",
+    version="2.0.0"
 )
 
 # CORS
@@ -30,32 +33,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount frontend static files
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
-
 # Include routers
 app.include_router(met_filter.router)
 app.include_router(mcp.router)
 app.include_router(wake.router)
 app.include_router(layout.router)
-app.include_router(projects.router)
-app.include_router(files.router)
-
-
-@app.get("/")
-def root():
-    """Serve the main HTML page"""
-    index_file = FRONTEND_DIR / "index.html"
-    if index_file.exists():
-        return FileResponse(str(index_file))
-    return {
-        "service": "Continuum Web API",
-        "version": "2.1.0",
-        "docs": "/docs",
-        "frontend": "Not found - check frontend directory"
-    }
+app.include_router(neural_mcp.router)
+app.include_router(wrf.router)
+app.include_router(reports.router)
+app.include_router(turbines.router)
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "service": "continuum-web", "version": "2.1.0"}
+    """Health check"""
+    return {"status": "healthy", "service": "continuum-web", "version": "2.0.0"}
+
+
+@app.get("/")
+def root():
+    return {
+        "service": "Continuum Web API",
+        "version": "2.0.0",
+        "description": "Toolkit eòlic open source",
+        "docs": "/docs",
+        "endpoints": {
+            "met_filter": "/met-filter",
+            "mcp": "/mcp",
+            "wake": "/wake",
+            "layout": "/layout",
+            "neural_mcp": "/mcp/neural",
+            "wrf": "/wrf",
+            "reports": "/reports",
+            "turbines": "/turbines"
+        }
+    }
