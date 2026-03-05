@@ -4,13 +4,28 @@ Neural MCP API Router
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 import numpy as np
 import pandas as pd
 
 from src.calculations.neural_mcp import NeuralMCP, NeuralMCPConfig
 
 router = APIRouter(prefix="/mcp/neural", tags=["Neural MCP"])
+
+
+def convert_numpy_types(obj: Any) -> Any:
+    """Converteix tipus numpy a tipus Python estàndard"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    return obj
 
 
 class NeuralMCPTrainRequest(BaseModel):
@@ -53,6 +68,7 @@ def train_neural_mcp(request: NeuralMCPTrainRequest):
         
         # Config
         config = NeuralMCPConfig(
+            input_features=3,  # wind_speed + sin(dir) + cos(dir)
             hidden_layers=request.hidden_layers or [64, 32, 16],
             epochs=request.epochs,
             batch_size=request.batch_size,
@@ -70,10 +86,10 @@ def train_neural_mcp(request: NeuralMCPTrainRequest):
         return {
             "status": "trained",
             "history": {
-                "final_train_loss": history['train_loss'][-1] if history['train_loss'] else None,
-                "final_val_loss": history['val_loss'][-1] if history['val_loss'] else None
+                "final_train_loss": float(history['train_loss'][-1]) if history['train_loss'] and len(history['train_loss']) > 0 else None,
+                "final_val_loss": float(history['val_loss'][-1]) if history['val_loss'] and len(history['val_loss']) > 0 else None
             },
-            "evaluation": eval_result,
+            "evaluation": convert_numpy_types(eval_result),
             "config": {
                 "hidden_layers": config.hidden_layers,
                 "epochs": config.epochs,

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional
 import numpy as np
 
-from src.calculations.layout import LayoutGA, LayoutGrid, LayoutOptimizer, calculate_layout_metrics
+from src.calculations.layout import LayoutGA, LayoutGrid, LayoutOptimizer, LayoutConfig, Layout, calculate_layout_metrics
 
 
 router = APIRouter(prefix="/layout", tags=["Layout Design"])
