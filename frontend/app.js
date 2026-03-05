@@ -583,3 +583,122 @@ document.addEventListener('keydown', (e) => {
         openProject();
     }
 });
+
+// Chart.js visualizations
+let charts = {};
+
+function createWindRoseChart(canvasId, data) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return null;
+    
+    // Destroy existing chart
+    if (charts[canvasId]) {
+        charts[canvasId].destroy();
+    }
+    
+    const labels = data.map(d => d.direction + '°');
+    const values = data.map(d => d.frequency);
+    
+    charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Freqüència (%)',
+                data: values,
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Rosa del Vent' }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Freqüència (%)' } }
+            }
+        }
+    });
+    
+    return charts[canvasId];
+}
+
+function createHistogramChart(canvasId, data) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return null;
+    
+    if (charts[canvasId]) {
+        charts[canvasId].destroy();
+    }
+    
+    const labels = data.map(d => d.bin);
+    const values = data.map(d => d.frequency);
+    
+    charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Freqüència',
+                data: values,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Histograma de Velocitat' }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Velocitat (m/s)' } },
+                y: { title: { display: true, text: 'Freqüència' } }
+            }
+        }
+    });
+    
+    return charts[canvasId];
+}
+
+function createWeibullChart(canvasId, data) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return null;
+    
+    if (charts[canvasId]) {
+        charts[canvasId].destroy();
+    }
+    
+    const labels = data.map(d => d.speed.toFixed(1));
+    const values = data.map(d => d.probability);
+    
+    charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Distribució Weibull',
+                data: values,
+                borderColor: 'rgba(249, 115, 22, 1)',
+                backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Distribució Weibull' }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Velocitat (m/s)' } },
+                y: { title: { display: true, text: 'Probabilitat' } }
+            }
+        }
+    });
+    
+    return charts[canvasId];
+}
