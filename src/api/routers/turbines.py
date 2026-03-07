@@ -112,6 +112,24 @@ async def list_available_turbines():
     return turbines
 
 
+@router.get("/iec-classes")
+async def get_iec_classes():
+    """
+    Retorna les classes IEC disponibles
+    """
+    return {
+        "classes": ["I", "II", "III", "S"],
+        "descriptions": {
+            "I": "High wind (Vavg > 10 m/s)",
+            "II": "Medium wind (8.5 < Vavg <= 10 m/s)",
+            "III": "Low wind (Vavg <= 8.5 m/s)",
+            "S": "Special (custom requirements)"
+        }
+    }
+
+
+
+
 @router.get("/{turbine_id}", response_model=TurbineDetail)
 async def get_turbine_detail(turbine_id: str):
     """
