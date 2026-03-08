@@ -215,7 +215,7 @@ class MCP:
             mask = (ref_df['wind_direction'] >= dir_min) & \
                    (ref_df['wind_direction'] < dir_max)
             
-            if mask.sum() < 10:  # Mínim mostres
+            if mask.sum() < 2:  # Mínim mostres per fer regressió
                 continue
             
             ref_sector = ref_df.loc[mask, 'wind_speed'].values
@@ -282,12 +282,22 @@ class MCP:
         
         # Resum d'incertesa
         residuals = target_global - predicted_data['predicted_ws'].values
-        uncertainty_summary = {
-            'mean_uncertainty': np.mean([r.uncertainty for r in sector_results]),
-            'max_uncertainty': np.max([r.uncertainty for r in sector_results]),
-            'min_correlation': np.min([r.correlation for r in sector_results]),
-            'global_correlation': corr
-        }
+        
+        # Handle empty sector_results
+        if sector_results:
+            uncertainty_summary = {
+                'mean_uncertainty': np.mean([r.uncertainty for r in sector_results]),
+                'max_uncertainty': np.max([r.uncertainty for r in sector_results]),
+                'min_correlation': np.min([r.correlation for r in sector_results]),
+                'global_correlation': corr
+            }
+        else:
+            uncertainty_summary = {
+                'mean_uncertainty': 0.0,
+                'max_uncertainty': 0.0,
+                'min_correlation': 0.0,
+                'global_correlation': corr
+            }
         
         return MCPResult(
             method=self.config.method,
