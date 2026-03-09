@@ -16,7 +16,7 @@ Funcionalitats:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.routers import met_filter, mcp, wake, layout, neural_mcp, wrf, reports, turbines, projects, files
+from src.api.routers import met_filter, mcp, wake, layout, neural_mcp, wrf, reports, turbines, projects, files, wind_map
 
 app = FastAPI(
     title="Continuum Web API",
@@ -44,6 +44,7 @@ app.include_router(reports.router)
 app.include_router(turbines.router)
 app.include_router(projects.router)
 app.include_router(files.router)
+app.include_router(wind_map.router)
 
 
 @app.get("/health")
@@ -67,6 +68,7 @@ def root():
             "neural_mcp": "/mcp/neural",
             "wrf": "/wrf",
             "reports": "/reports",
-            "turbines": "/turbines"
+            "turbines": "/turbines",
+            "wind_map": "/wind-map"
         }
     }

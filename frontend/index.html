@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -38,6 +40,7 @@
             <li class="nav-item dropdown">
                 <a href="#"><i class="fas fa-tools"></i> Eines</a>
                 <div class="dropdown-content">
+                    <a href="#" onclick="showWindMap()"><i class="fas fa-map"></i> Wind Map</a>
                     <a href="#" onclick="runMetFilter()"><i class="fas fa-filter"></i> Filtratge Met</a>
                     <a href="#" onclick="runMCP()"><i class="fas fa-project-diagram"></i> MCP</a>
                     <a href="#" onclick="runWake()"><i class="fas fa-wind"></i> Wake</a>
@@ -390,6 +393,25 @@
                 </section>
             </div>
         </div>
+                <section id="tab-wind-map" class="tab-content">
+                    <h2><i class="fas fa-wind"></i> Wind Map</h2>
+                    <p>Visualització interactiva de dades de vent</p>
+                    
+                    <div class="form-group">
+                        <label>Latitud:</label>
+                        <input type="number" id="map-lat" value="41.5" step="0.1">
+                        <label>Longitud:</label>
+                        <input type="number" id="map-lon" value="2.5" step="0.1">
+                        <label>Hores:</label>
+                        <input type="number" id="map-hours" value="24" min="1" max="168">
+                        <button onclick="loadWindData()" class="btn-primary">Carregar Dades</button>
+                    </div>
+                    
+                    <div id="wind-map" style="height: 500px; margin-top: 20px; border-radius: 8px;"></div>
+                    
+                    <div id="map-results" style="margin-top: 20px;"></div>
+                </section>
+
     </main>
 
     <!-- Modal: New Project -->
@@ -418,21 +440,6 @@
                 <button class="primary-btn" onclick="createNewProject()">
                     <i class="fas fa-plus"></i> Crear Projecte
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Open Project -->
-    <div id="modal-open-project" class="modal hidden">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h2><i class="fas fa-folder-open"></i> Obrir Projecte</h2>
-                <button class="modal-close" onclick="closeOpenProjectModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="project-list" id="all-projects-list">
-                    <p class="placeholder">Carregant projectes...</p>
-                </div>
             </div>
         </div>
     </div>

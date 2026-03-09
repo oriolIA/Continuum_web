@@ -686,19 +686,70 @@ function createWeibullChart(canvasId, data) {
                 backgroundColor: 'rgba(249, 115, 22, 0.2)',
                 fill: true,
                 tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: { display: true, text: 'Distribució Weibull' }
-            },
-            scales: {
-                x: { title: { display: true, text: 'Velocitat (m/s)' } },
-                y: { title: { display: true, text: 'Probabilitat' } }
             }
         }
     });
     
     return charts[canvasId];
+}
+
+// Wind Map - Leaflet Integration
+let windMap = null;
+let windLayer = null;
+
+function showWindMap() {
+    // Show the wind map tab
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(t => t.style.display = 'none');
+    document.getElementById('tab-wind-map').style.display = 'block';
+    
+    // Initialize map after DOM is visible
+    setTimeout(initWindMap, 100);
+}
+
+function initWindMap() {
+    if (windMap) {
+        windMap.invalidateSize();
+        return;
+    }
+    
+    windMap = L.map('wind-map').setView([lat, lon], 8);
+    
+    // OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(windMap);
+}
+
+async function loadWindData() {
+    const lat = document.getElementById('map-lat').value;
+    const lon = document.getElementById('map-lon').value;
+    const hours = document.getElementById('map-hours').value;
+    
+    showLoading('Carregant dades de vent...');
+    
+    try {
+        const response = await fetch(`/api/wind-map?lat=${lat}&lon=${lon}&hours=${hours}`);
+        const data = await response.json();
+        
+        if (!windMap) initWindMap();
+        
+        // Clear existing layer
+        if (windLayer) windMap.removeLayer(windLayer);
+        
+        // Show results
+        const resultsDiv = document.getElementById('map-results');
+        resultsDiv.innerHTML = `
+            <h3>Resultats</h3>
+            <p>Mitjana velocitat: ${data.avg_speed?.toFixed(2)} m/s</p>
+            <p>Direcció dominant: ${data.dominant_direction?.toFixed(0)}°</p>
+            <p>Hores carregades: ${data.hours}</p>
+        `;
+        
+        hideLoading();
+    } catch (error) {
+        console.error('Error carregant dades:', error);
+        hideLoading();
+        showToast('Error carregant dades de vent', 'error');
+    }
 }
